@@ -1066,6 +1066,20 @@ LETTERS = [
 ]
 
 
+ANIMALS_NAMED = [(cat, 150, "Cat", "बिल्ली"), (owl, 140, "Owl", "उल्लू"), (rabbit, 95, "Rabbit", "खरगोश"),
+                 (duck, 115, "Duck", "बत्तख"), (turtle, 130, "Turtle", "कछुआ"), (fish, 120, "Fish", "मछली"),
+                 (butterfly, 130, "Butterfly", "तितली"), (ladybug, 115, "Ladybug", "लेडीबग")]
+
+
+def animal_box(cv, i, rng):
+    """Jin akshar/letter ka chitra nahi hai wahan ek pyara janwar + uska naam (English + Hindi)."""
+    func, sz, en, hi = ANIMALS_NAMED[(i - 1) % len(ANIMALS_NAMED)]
+    func(cv, 880, 390, sz, rng)
+    cv.text((880, 595), en, BLACK, 52)
+    if HAS_HINDI:
+        cv.text((880, 660), hi, BLACK, 56, font=get_hindi_font)
+
+
 def make_letter_page(i):
     """Varnamala sheet i (1..len(LETTERS)): khokhla akshar, chitra, shabd, likhne ki practice."""
     ch, rl, word, rw, pic = LETTERS[i - 1]
@@ -1078,9 +1092,7 @@ def make_letter_page(i):
         func, sz = PICS[pic]
         func(cv, 880, 450, sz, rng)
     else:
-        cv.rounded_rectangle([650, 250, 1110, 650], 40, outline=BLACK, width=5)
-        cv.text((880, 420), "Yahan apna", GRAY, 52)
-        cv.text((880, 490), "chitra banao", GRAY, 52)
+        animal_box(cv, i, rng)
 
     if word:
         cv.text((W // 2, 760), f"{ch} से {word}", BLACK, 110, font=get_hindi_font)
@@ -1132,9 +1144,7 @@ def make_abc_page(i):
         func, sz = ABC_PICS[pic]
         func(cv, 880, 450, sz, rng)
     else:
-        cv.rounded_rectangle([650, 250, 1110, 650], 40, outline=BLACK, width=5)
-        cv.text((880, 420), "Yahan apna", GRAY, 52)
-        cv.text((880, 490), "chitra banao", GRAY, 52)
+        animal_box(cv, i, rng)
     cv.text((W // 2, 790), f"{up} for {word}", BLACK, 110)
     cv.text((100, 950), "Likho (upar se trace karo):", BLACK, 42, "lm")
     for row, cy in enumerate((1045, 1190, 1335, 1480)):
