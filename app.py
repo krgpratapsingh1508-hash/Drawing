@@ -813,14 +813,262 @@ def treats(d, rng):
     sprinkle(d, rng, placed, 200, 1580, 8)
 
 
+# ---- keede-makode (Bugs theme ke liye)
+def _eyes(d, x, y, r, gap=0.3, er=0.08):
+    for sx in (-1, 1):
+        dot(d, x + sx * r * gap, y, max(3, r * er))
+
+
+def _smile(d, x, y, r, w=0.4):
+    d.arc([x - r * w, y - r * w * 0.6, x + r * w, y + r * w], 20, 160, fill=BLACK, width=LW - 3)
+
+
+def bee(d, x, y, r, rng):
+    y += r * 0.2
+    poly(d, rot_ellipse(x - r * 0.4, y - r * 0.75, r * 0.24, r * 0.45, 0.35))
+    poly(d, rot_ellipse(x + r * 0.05, y - r * 0.77, r * 0.24, r * 0.45, -0.1))
+    poly(d, [(x - r, y - r * 0.12), (x - r * 1.3, y), (x - r, y + r * 0.12)])
+    xc, a, b = x - r * 0.225, r * 0.775, r * 0.5
+    ell(d, x - r, y - b, x + r * 0.55, y + b)
+    for xs in (x - r * 0.6, x - r * 0.25, x + r * 0.1):
+        h = b * math.sqrt(1 - ((xs - xc) / a) ** 2)
+        d.line([(xs, y - h), (xs, y + h)], fill=BLACK, width=LW - 2)
+    d.line([(x + r * 0.6, y - r * 0.3), (x + r * 0.5, y - r * 0.85)], fill=BLACK, width=LW - 2)
+    d.line([(x + r * 0.8, y - r * 0.3), (x + r * 1.0, y - r * 0.85)], fill=BLACK, width=LW - 2)
+    dot(d, x + r * 0.5, y - r * 0.85, max(4, r * 0.06))
+    dot(d, x + r * 1.0, y - r * 0.85, max(4, r * 0.06))
+    circ(d, x + r * 0.7, y - r * 0.02, r * 0.36)
+    _eyes(d, x + r * 0.7, y - r * 0.1, r * 0.4, 0.4, 0.09)
+    _smile(d, x + r * 0.7, y + r * 0.05, r * 0.4, 0.45)
+
+
+def ant(d, x, y, r, rng):
+    for k, lx in enumerate((x - r * 0.2, x - r * 0.0, x + r * 0.2)):
+        d.line([(lx, y + r * 0.15), (lx + (k - 1) * r * 0.2 + r * 0.1, y + r * 0.5),
+                (lx + (k - 1) * r * 0.45, y + r * 0.85)], fill=BLACK, width=LW, joint="curve")
+    ell(d, x - r, y - r * 0.38, x - r * 0.25, y + r * 0.38)
+    ell(d, x - r * 0.3, y - r * 0.22, x + r * 0.2, y + r * 0.22)
+    circ(d, x + r * 0.55, y - r * 0.05, r * 0.36)
+    d.line([(x + r * 0.7, y - r * 0.38), (x + r * 0.95, y - r * 0.85), (x + r * 1.15, y - r * 0.8)],
+           fill=BLACK, width=LW - 2, joint="curve")
+    d.line([(x + r * 0.5, y - r * 0.4), (x + r * 0.55, y - r * 0.9), (x + r * 0.75, y - r * 0.95)],
+           fill=BLACK, width=LW - 2, joint="curve")
+    _eyes(d, x + r * 0.55, y - r * 0.12, r * 0.4, 0.4, 0.09)
+    _smile(d, x + r * 0.55, y - r * 0.0, r * 0.4, 0.45)
+
+
+def spider(d, x, y, r, rng):
+    d.line([(x, y - r * 1.15), (x, y - r * 0.6)], fill=BLACK, width=LW - 3)
+    for i in range(4):
+        for sx in (-1, 1):
+            d.line([(x + sx * r * 0.3, y - r * 0.1 + i * r * 0.12),
+                    (x + sx * r * (0.95 + (0.1 if i in (1, 2) else 0)), y - r * 0.6 + i * r * 0.28),
+                    (x + sx * r * 1.25, y + r * 0.1 + i * r * 0.42)],
+                   fill=BLACK, width=LW, joint="curve")
+    circ(d, x, y + r * 0.2, r * 0.55)
+    circ(d, x, y - r * 0.4, r * 0.34)
+    _eyes(d, x, y - r * 0.45, r * 0.5, 0.45, 0.1)
+    _smile(d, x, y - r * 0.38, r * 0.4, 0.4)
+    for sx in (-1, 1):
+        circ(d, x + sx * r * 0.25, y + r * 0.1, r * 0.1)
+
+
+def snail(d, x, y, r, rng):
+    y += r * 0.1
+    ell(d, x - r, y + r * 0.35, x + r * 0.75, y + r * 0.7)
+    ell(d, x + r * 0.4, y - r * 0.05, x + r, y + r * 0.7)
+    for sx, tx in ((0.62, 0.55), (0.85, 0.95)):
+        d.line([(x + r * sx, y - r * 0.0), (x + r * tx, y - r * 0.5)], fill=BLACK, width=LW - 1)
+        circ(d, x + r * tx, y - r * 0.5, r * 0.07)
+    dot(d, x + r * 0.78, y + r * 0.22, max(3, r * 0.045))
+    d.arc([x + r * 0.62, y + r * 0.2, x + r * 0.92, y + r * 0.5], 20, 160, fill=BLACK, width=LW - 3)
+    circ(d, x - r * 0.2, y - r * 0.05, r * 0.68)
+    d.ellipse([x - r * 0.2 - r * 0.42, y - r * 0.05 - r * 0.42, x - r * 0.2 + r * 0.42, y - r * 0.05 + r * 0.42],
+              outline=BLACK, width=LW - 2)
+    d.ellipse([x - r * 0.2 - r * 0.2, y - r * 0.05 - r * 0.2, x - r * 0.2 + r * 0.2, y - r * 0.05 + r * 0.2],
+              outline=BLACK, width=LW - 2)
+
+
+def caterpillar(d, x, y, r, rng):
+    segs = []
+    for i in range(5):
+        cx = x - r * 0.95 + i * r * 0.42
+        cy = y + math.sin(i * 1.3) * r * 0.14
+        segs.append((cx, cy))
+        d.line([(cx, cy + r * 0.3), (cx - r * 0.03, cy + r * 0.55)], fill=BLACK, width=LW)
+    for cx, cy in segs:
+        circ(d, cx, cy, r * 0.34)
+        d.arc([cx - r * 0.12, cy - r * 0.1, cx + r * 0.12, cy + r * 0.14], 20, 160, fill=BLACK, width=LW - 4)
+    hx, hy = x + r * 0.95, y - r * 0.12
+    circ(d, hx, hy, r * 0.45)
+    d.line([(hx - r * 0.15, hy - r * 0.4), (hx - r * 0.3, hy - r * 0.85)], fill=BLACK, width=LW - 2)
+    d.line([(hx + r * 0.15, hy - r * 0.4), (hx + r * 0.3, hy - r * 0.85)], fill=BLACK, width=LW - 2)
+    dot(d, hx - r * 0.3, hy - r * 0.85, max(4, r * 0.06))
+    dot(d, hx + r * 0.3, hy - r * 0.85, max(4, r * 0.06))
+    _eyes(d, hx, hy - r * 0.08, r * 0.5, 0.4, 0.1)
+    _smile(d, hx, hy + r * 0.02, r * 0.5, 0.45)
+
+
+def dragonfly(d, x, y, r, rng):
+    for cx, cy, an in ((x + r * 0.15, y - r * 0.4, -0.25), (x - r * 0.25, y - r * 0.3, 0.2),
+                       (x + r * 0.15, y + r * 0.4, 0.25), (x - r * 0.25, y + r * 0.3, -0.2)):
+        poly(d, rot_ellipse(cx, cy, r * 0.5, r * 0.13, an))
+    ell(d, x - r, y - r * 0.08, x + r * 0.6, y + r * 0.08)
+    for k in range(6):
+        sx = x - r * 0.85 + k * r * 0.22
+        d.line([(sx, y - r * 0.08), (sx, y + r * 0.08)], fill=BLACK, width=LW - 4)
+    ell(d, x + r * 0.35, y - r * 0.16, x + r * 0.62, y + r * 0.16)
+    circ(d, x + r * 0.8, y, r * 0.2)
+    dot(d, x + r * 0.85, y - r * 0.04, max(3, r * 0.045))
+    d.arc([x + r * 0.78, y - r * 0.02, x + r * 0.95, y + r * 0.12], 20, 160, fill=BLACK, width=LW - 4)
+
+
+def grasshopper(d, x, y, r, rng):
+    y += r * 0.05
+    d.line([(x - r * 0.88, y - r * 0.28), (x - r * 1.15, y + r * 0.62)], fill=BLACK, width=LW + 2)
+    d.line([(x - r * 1.25, y + r * 0.62), (x - r * 1.0, y + r * 0.62)], fill=BLACK, width=LW + 2)
+    for lx in (x + r * 0.3, x + r * 0.0):
+        d.line([(lx, y + r * 0.2), (lx + r * 0.1, y + r * 0.4), (lx + r * 0.05, y + r * 0.62)],
+               fill=BLACK, width=LW, joint="curve")
+    poly(d, rot_ellipse(x - r * 0.25, y - r * 0.18, r * 0.65, r * 0.12, 0.12))
+    ell(d, x - r * 0.8, y - r * 0.25, x + r * 0.5, y + r * 0.25)
+    poly(d, rot_ellipse(x - r * 0.55, y - r * 0.0, r * 0.4, r * 0.14, 0.6))
+    ell(d, x + r * 0.35, y - r * 0.35, x + r * 0.95, y + r * 0.2)
+    d.line([(x + r * 0.7, y - r * 0.33), (x + r * 0.95, y - r * 0.85)], fill=BLACK, width=LW - 2)
+    d.line([(x + r * 0.55, y - r * 0.33), (x + r * 0.55, y - r * 0.85)], fill=BLACK, width=LW - 2)
+    dot(d, x + r * 0.72, y - r * 0.14, max(3, r * 0.06))
+    d.arc([x + r * 0.7, y - r * 0.08, x + r * 0.9, y + r * 0.1], 20, 160, fill=BLACK, width=LW - 4)
+
+
+def fly(d, x, y, r, rng):
+    y += r * 0.1
+    for sx in (-1, 1):
+        poly(d, rot_ellipse(x + sx * r * 0.6, y + r * 0.2, r * 0.55, r * 0.22, (2.2 if sx < 0 else 0.94)))
+        for k in range(3):
+            d.line([(x + sx * r * 0.3, y - r * 0.05 + k * r * 0.2), (x + sx * r * 0.8, y + r * 0.0 + k * r * 0.3)],
+                   fill=BLACK, width=LW - 2)
+    ell(d, x - r * 0.4, y - r * 0.2, x + r * 0.4, y + r * 0.75)
+    d.line([(x, y + r * 0.1), (x, y + r * 0.75)], fill=BLACK, width=LW - 3)
+    circ(d, x, y - r * 0.4, r * 0.32)
+    for sx in (-1, 1):
+        circ(d, x + sx * r * 0.22, y - r * 0.5, r * 0.15)
+        dot(d, x + sx * r * 0.22, y - r * 0.5, max(3, r * 0.05))
+        d.line([(x + sx * r * 0.1, y - r * 0.7), (x + sx * r * 0.2, y - r * 0.95)], fill=BLACK, width=LW - 3)
+    d.arc([x - r * 0.15, y - r * 0.42, x + r * 0.15, y - r * 0.2], 20, 160, fill=BLACK, width=LW - 4)
+
+
+def beetle(d, x, y, r, rng):
+    y += r * 0.1
+    for k in range(3):
+        for sx in (-1, 1):
+            d.line([(x + sx * r * 0.5, y + k * r * 0.35), (x + sx * r * 0.9, y + k * r * 0.35 - r * 0.1 + (k - 1) * r * 0.1),
+                    (x + sx * r * 1.1, y + k * r * 0.35 + r * 0.2)],
+                   fill=BLACK, width=LW, joint="curve")
+    poly(d, [(x - r * 0.15, y - r * 0.85), (x - r * 0.35, y - r * 1.25), (x - r * 0.05, y - r * 0.95)])
+    poly(d, [(x + r * 0.15, y - r * 0.85), (x + r * 0.35, y - r * 1.25), (x + r * 0.05, y - r * 0.95)])
+    ell(d, x - r * 0.6, y - r * 0.4, x + r * 0.6, y + r * 0.95)
+    d.line([(x, y - r * 0.4), (x, y + r * 0.95)], fill=BLACK, width=LW - 2)
+    for sx, sy, sr in ((-0.3, 0.0, 0.1), (0.3, 0.0, 0.1), (-0.3, 0.4, 0.1), (0.3, 0.4, 0.1), (-0.25, 0.75, 0.08), (0.25, 0.75, 0.08)):
+        circ(d, x + sx * r, y + sy * r, sr * r)
+    circ(d, x, y - r * 0.65, r * 0.3)
+    _eyes(d, x, y - r * 0.7, r * 0.4, 0.4, 0.1)
+    _smile(d, x, y - r * 0.62, r * 0.3, 0.45)
+
+
+def firefly(d, x, y, r, rng):
+    for k in range(10):
+        a = 2 * math.pi * k / 10
+        d.line([(x - r * 0.85 + math.cos(a) * r * 0.42, y + r * 0.1 + math.sin(a) * r * 0.42),
+                (x - r * 0.85 + math.cos(a) * r * 0.65, y + r * 0.1 + math.sin(a) * r * 0.65)],
+               fill=BLACK, width=LW - 2)
+    poly(d, rot_ellipse(x - r * 0.1, y - r * 0.55, r * 0.5, r * 0.18, -0.4))
+    for lx in (x - r * 0.25, x + r * 0.05):
+        d.line([(lx, y + r * 0.2), (lx - r * 0.05, y + r * 0.55)], fill=BLACK, width=LW)
+    ell(d, x - r * 0.75, y - r * 0.2, x + r * 0.35, y + r * 0.28)
+    circ(d, x - r * 0.85, y + r * 0.1, r * 0.3)
+    circ(d, x + r * 0.55, y - r * 0.05, r * 0.3)
+    dot(d, x + r * 0.63, y - r * 0.12, max(3, r * 0.05))
+    d.arc([x + r * 0.45, y - r * 0.08, x + r * 0.72, y + r * 0.15], 20, 160, fill=BLACK, width=LW - 4)
+    d.line([(x + r * 0.55, y - r * 0.33), (x + r * 0.7, y - r * 0.7)], fill=BLACK, width=LW - 2)
+
+
+def mosquito(d, x, y, r, rng):
+    poly(d, rot_ellipse(x - r * 0.1, y - r * 0.45, r * 0.5, r * 0.13, -0.3))
+    poly(d, rot_ellipse(x - r * 0.4, y - r * 0.38, r * 0.5, r * 0.13, 0.1))
+    for sx, ex, ey in ((-0.2, -0.65, 1.0), (0.0, -0.05, 1.05), (0.15, 0.55, 0.95)):
+        d.line([(x + sx * r, y + r * 0.1), (x + (sx + ex) / 2 * r - r * 0.15, y + r * 0.55), (x + ex * r, y + r * ey)],
+               fill=BLACK, width=LW - 2, joint="curve")
+    ell(d, x - r * 0.95, y - r * 0.12, x - r * 0.1, y + r * 0.16)
+    circ(d, x + r * 0.0, y + r * 0.0, r * 0.24)
+    circ(d, x + r * 0.42, y + r * 0.02, r * 0.2)
+    dot(d, x + r * 0.5, y - r * 0.04, max(3, r * 0.04))
+    d.line([(x + r * 0.58, y + r * 0.1), (x + r * 1.15, y + r * 0.4)], fill=BLACK, width=LW - 2)
+
+
+def worm(d, x, y, r, rng):
+    n = 40
+    pts = [(x - r + 2 * r * t / n, y + math.sin(t / n * 2 * math.pi * 1.5) * r * 0.28) for t in range(n + 1)]
+    w = r * 0.16
+    d.line([(px, py - w) for px, py in pts], fill=BLACK, width=LW, joint="curve")
+    d.line([(px, py + w) for px, py in pts], fill=BLACK, width=LW, joint="curve")
+    circ(d, pts[0][0], pts[0][1], w)
+    for i in range(3, n - 3, 4):
+        d.line([(pts[i][0], pts[i][1] - w), (pts[i][0], pts[i][1] + w)], fill=BLACK, width=LW - 4)
+    hx, hy = pts[-1]
+    circ(d, hx, hy, r * 0.24)
+    _eyes(d, hx, hy - r * 0.05, r * 0.3, 0.4, 0.1)
+    _smile(d, hx, hy + r * 0.02, r * 0.3, 0.45)
+
+
+def scorpion(d, x, y, r, rng):
+    y += r * 0.3
+    for k in range(4):
+        for sx in (-1,):
+            lx = x - r * 0.35 + k * r * 0.2
+            d.line([(lx, y + r * 0.3), (lx - r * 0.15, y + r * 0.6), (lx - r * 0.1, y + r * 0.8)],
+                   fill=BLACK, width=LW, joint="curve")
+    tail = [(-0.65, 0.12, 0.17), (-0.85, -0.2, 0.16), (-0.85, -0.55, 0.15), (-0.65, -0.85, 0.14), (-0.35, -0.95, 0.13)]
+    for tx, ty, tr in tail:
+        circ(d, x + tx * r, y + ty * r, tr * r)
+    poly(d, [(x - r * 0.2, y - r * 1.12), (x + r * 0.0, y - r * 0.85), (x - r * 0.18, y - r * 0.9)])
+    d.line([(x + r * 0.3, y - r * 0.05), (x + r * 0.75, y - r * 0.25)], fill=BLACK, width=LW + 2)
+    d.line([(x + r * 0.3, y + r * 0.2), (x + r * 0.75, y + r * 0.4)], fill=BLACK, width=LW + 2)
+    for cy in (-0.4, 0.55):
+        cx = x + r * 0.95
+        poly(d, rot_ellipse(cx, y + r * cy, r * 0.3, r * 0.2, 0.0))
+        poly(d, [(cx + r * 0.2, y + r * cy - r * 0.02), (cx + r * 0.5, y + r * cy), (cx + r * 0.2, y + r * cy + r * 0.12)])
+    ell(d, x - r * 0.6, y - r * 0.15, x + r * 0.4, y + r * 0.4)
+    _eyes(d, x + r * 0.05, y + r * 0.05, r * 0.5, 0.3, 0.09)
+    _smile(d, x + r * 0.05, y + r * 0.15, r * 0.4, 0.4)
+
+
+# (function, size, English, Hindi)
+BUGS_NAMED = [
+    (ladybug, 130, "Ladybug", "लेडीबग"), (butterfly, 150, "Butterfly", "तितली"), (bee, 185, "Bee", "मधुमक्खी"),
+    (ant, 175, "Ant", "चींटी"), (spider, 150, "Spider", "मकड़ी"), (snail, 180, "Snail", "घोंघा"),
+    (caterpillar, 180, "Caterpillar", "इल्ली"), (dragonfly, 210, "Dragonfly", "ड्रैगनफ्लाई"),
+    (grasshopper, 180, "Grasshopper", "टिड्डा"), (fly, 160, "Fly", "मक्खी"),
+    (beetle, 150, "Beetle", "भृंग"), (firefly, 190, "Firefly", "जुगनू"),
+    (mosquito, 190, "Mosquito", "मच्छर"), (worm, 190, "Earthworm", "केंचुआ"),
+    (scorpion, 170, "Scorpion", "बिच्छू"),
+]
+
+
 def bugs(d, rng):
-    items = [(ladybug, rng.randint(95, 125), 160) for _ in range(3)]
-    items += [(butterfly, rng.randint(70, 90), 100) for _ in range(2)]
-    items += [(mushroom, rng.randint(85, 110), 125) for _ in range(3)]
-    items += [(flower, rng.randint(42, 55), 100) for _ in range(3)]
-    items += [(star, 40, 55)] * 2
-    placed = scatter(d, rng, items, 200, 1560)
-    sprinkle(d, rng, placed, 200, 1580, 8)
+    """Ek bada keeda + uske niche naam (English aur Hindi). Pas-pas ki sheets me keede alag-alag aate hain."""
+    k = getattr(rng, "sheet_n", 0) // 10
+    func, sz, en, hi = BUGS_NAMED[k % len(BUGS_NAMED)]
+    func(d, W // 2, 740, int(sz * 2.0 * rng.uniform(0.94, 1.04)), rng)
+    d.text((W // 2, 1160), en, BLACK, 104)
+    if HAS_HINDI:
+        d.text((W // 2, 1285), hi, BLACK, 112, font=get_hindi_font)
+    placed = [(W // 2, 740, 420)] + [(W // 2 + dx, yy, 120) for dx in range(-480, 481, 120) for yy in (1160, 1285)]
+    items = [(cloud, rng.randint(80, 105), 125), (sun, 80, 130)]
+    items += [(flower, rng.randint(38, 50), 100) for _ in range(rng.randint(2, 3))]
+    items += [(mushroom, rng.randint(70, 85), 105) for _ in range(rng.randint(0, 2))]
+    items += [(star, rng.randint(36, 50), 60) for _ in range(rng.randint(2, 4))]
+    placed = scatter(d, rng, items, 190, 1600, placed)
+    sprinkle(d, rng, placed, 190, 1600, rng.randint(5, 9))
 
 
 def rainbow_world(d, rng):
