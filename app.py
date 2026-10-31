@@ -564,26 +564,17 @@ ANIMALS = [(cat, 1.0), (owl, 0.9), (rabbit, 0.62), (duck, 0.8), (turtle, 0.9)]
 
 
 def animals(d, rng):
-    layout = rng.choice(["big2", "grid"])
-    if layout == "big2":
-        picks = rng.sample(ANIMALS, 2)
-        placed = []
-        for (func, k), y in zip(picks, (640, 1265)):
-            r = int(300 * k)
-            func(d, W // 2, y, r, rng)
-            placed.append((W // 2, y, int(r * 1.15) + 40))
-        items = [(butterfly, 55, 75)] * 2 + [(star, 42, 55)] * 3 + [(flower, 38, 95)] * 2
-        placed = scatter(d, rng, items, 190, 1600, placed)
-        sprinkle(d, rng, placed, 190, 1600, 8)
-    else:
-        items = []
-        for _ in range(6):
-            func, k = rng.choice(ANIMALS)
-            r = int(rng.randint(105, 125) * k)
-            items.append((func, r, int(r * 1.7)))
-        placed = scatter(d, rng, items, 200, 1580)
-        placed = scatter(d, rng, [(star, 42, 55)] * 3 + [(flower, 36, 90)] * 2, 200, 1580, placed)
-        sprinkle(d, rng, placed, 200, 1580, 8)
+    """Ek bada janwar + uske niche naam (English aur Hindi)."""
+    func, sz, en, hi = rng.choice(ANIMALS_NAMED)
+    k = 2.0
+    func(d, W // 2, 740, int(sz * k), rng)
+    d.text((W // 2, 1160), en, BLACK, 104)
+    if HAS_HINDI:
+        d.text((W // 2, 1285), hi, BLACK, 112, font=get_hindi_font)
+    placed = [(W // 2, 740, 400)] + [(W // 2 + dx, yy, 125) for dx in (-230, 0, 230) for yy in (1160, 1285)]
+    items = [(butterfly, 55, 75)] * 2 + [(star, 42, 55)] * 3 + [(flower, 38, 95)] * 2
+    placed = scatter(d, rng, items, 190, 1600, placed)
+    sprinkle(d, rng, placed, 190, 1600, 8)
 
 
 def vehicles(d, rng):
