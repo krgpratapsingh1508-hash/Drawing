@@ -9,25 +9,23 @@ st.set_page_config(page_title="Drawing Book", page_icon="🎨", layout="wide")
 st.title("🎨 Bacho ki Drawing Book")
 st.write("Har baar naya drawing book! Download karo, print karo aur rang bharo. 🖍️")
 
-if "seed" not in st.session_state:
-    # Har naya visitor / refresh = naya seed = naye drawing pages
-    st.session_state.seed = random.SystemRandom().randrange(10 ** 9)
-
 with st.sidebar:
     st.header("Settings")
     n_pages = st.slider("Kitne pages?", 1, 12, 4)
     chosen = st.multiselect("Kaunse themes?", list(THEMES), default=list(THEMES))
 
-if st.button("🔄 Naya Drawing Book Do", type="primary"):
-    st.session_state.seed = random.SystemRandom().randrange(10 ** 9)
+st.button("🔄 Naya Drawing Book Do", type="primary")
+
+# Har run (page kholna, button dabana, download karna) par bilkul naya seed,
+# isliye har baar naye drawings aate hain.
+seed = random.SystemRandom().randrange(10 ** 9)
 
 
-@st.cache_data(show_spinner="Drawing book ban rahi hai... ✏️", max_entries=20)
+@st.cache_data(show_spinner="Drawing book ban rahi hai... ✏️", max_entries=10)
 def build(seed, n, themes):
     return generate_book(seed, list(themes), n)
 
 
-seed = st.session_state.seed
 pngs, pdf = build(seed, n_pages, tuple(chosen or THEMES))
 
 st.download_button(
