@@ -1,2 +1,2 @@
 streamlit
-Pillow
+Pillow>=10.1
