@@ -72,6 +72,14 @@ class Canvas:
         self.d.text((xy[0] * self.s, xy[1] * self.s), text, fill=fill,
                     font=get_font(size * self.s), anchor=anchor)
 
+    def font_text(self, xy, text, fill, maker, size, anchor="mm", stroke=0, stroke_fill=None):
+        """maker(pixel_size) -> font. stroke>0 + fill=WHITE => khokhla (outline) akshar."""
+        kw = {}
+        if stroke:
+            kw = dict(stroke_width=int(stroke * self.s), stroke_fill=stroke_fill)
+        self.d.text((xy[0] * self.s, xy[1] * self.s), text, fill=fill,
+                    font=maker(size * self.s), anchor=anchor, **kw)
+
 
 # ----------------------------------------------------------------- helpers
 def poly(d, pts):
