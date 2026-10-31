@@ -219,6 +219,65 @@ def owl(d, x, y, r, rng):
               20, 160, fill=BLACK, width=LW - 2)
 
 
+def car(d, x, y, r, rng):
+    poly(d, [(x - r * 0.55, y - r * 0.2), (x - r * 0.3, y - r * 0.7),
+             (x + r * 0.35, y - r * 0.7), (x + r * 0.6, y - r * 0.2)])
+    rect(d, x - r, y - r * 0.2, x + r, y + r * 0.4)
+    poly(d, [(x - r * 0.42, y - r * 0.25), (x - r * 0.25, y - r * 0.6), (x - r * 0.03, y - r * 0.6),
+             (x - r * 0.03, y - r * 0.25)])
+    poly(d, [(x + r * 0.07, y - r * 0.25), (x + r * 0.07, y - r * 0.6), (x + r * 0.3, y - r * 0.6),
+             (x + r * 0.45, y - r * 0.25)])
+    for wx in (x - r * 0.55, x + r * 0.55):
+        circ(d, wx, y + r * 0.4, r * 0.26)
+        circ(d, wx, y + r * 0.4, r * 0.1)
+    circ(d, x + r * 0.88, y + r * 0.05, r * 0.07)
+
+
+def boat(d, x, y, r, rng):
+    d.line([(x, y - r * 1.2), (x, y + r * 0.1)], fill=BLACK, width=LW)
+    poly(d, [(x + r * 0.07, y - r * 1.1), (x + r * 0.85, y - r * 0.15), (x + r * 0.07, y - r * 0.15)])
+    poly(d, [(x - r * 0.07, y - r * 0.9), (x - r * 0.6, y - r * 0.15), (x - r * 0.07, y - r * 0.15)])
+    poly(d, [(x - r, y + r * 0.1), (x + r, y + r * 0.1), (x + r * 0.6, y + r * 0.6), (x - r * 0.6, y + r * 0.6)])
+    circ(d, x, y + r * 0.35, r * 0.1)
+    for k in (-1, 0, 1):
+        d.arc([x + k * r * 0.7 - r * 0.3, y + r * 0.55, x + k * r * 0.7 + r * 0.3, y + r * 0.9],
+              0, 180, fill=BLACK, width=LW - 2)
+
+
+def apple(d, x, y, r, rng):
+    d.line([(x, y - r * 0.4), (x + r * 0.1, y - r * 0.8)], fill=BLACK, width=LW)
+    blob(d, [(x - r * 0.3, y, r * 0.55), (x + r * 0.3, y, r * 0.55), (x, y + r * 0.2, r * 0.55)])
+    poly(d, rot_ellipse(x + r * 0.38, y - r * 0.68, r * 0.28, r * 0.12, -0.5))
+
+
+def icecream(d, x, y, r, rng):
+    poly(d, [(x - r * 0.4, y), (x + r * 0.4, y), (x, y + r * 1.1)])
+    d.line([(x - r * 0.25, y + r * 0.2), (x + r * 0.15, y + r * 0.6)], fill=BLACK, width=LW - 3)
+    d.line([(x + r * 0.25, y + r * 0.2), (x - r * 0.15, y + r * 0.6)], fill=BLACK, width=LW - 3)
+    circ(d, x, y - r * 0.1, r * 0.45)
+    circ(d, x, y - r * 0.65, r * 0.38)
+    circ(d, x, y - r * 1.1, r * 0.12)
+
+
+def heart(d, x, y, r, rng):
+    pts = []
+    for i in range(60):
+        t = 2 * math.pi * i / 60
+        hx = 16 * math.sin(t) ** 3
+        hy = 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)
+        pts.append((x + hx * r / 16, y - hy * r / 16))
+    poly(d, pts)
+
+
+def moon(d, x, y, r, rng):
+    pts = [(x + r * math.cos(t), y + r * math.sin(t))
+           for t in [math.pi / 2 + math.pi * i / 30 for i in range(31)]]
+    pts += [(x - r * 0.45 * math.sin(s), y - r * math.cos(s))
+            for s in [math.pi * i / 30 for i in range(31)]]
+    poly(d, pts)
+    star(d, x + r * 0.7, y - r * 0.3, r * 0.2, rng)
+
+
 # ----------------------------------------------------------------- scenes
 def scatter(d, rng, items, y0, y1, placed=None):
     """Items ko bina takraye random jagah par rakhta hai.
@@ -278,6 +337,38 @@ def animals(d, rng):
     scatter(d, rng, items, 190, 1600, placed)
 
 
+def vehicles(d, rng):
+    items = [(car, rng.randint(110, 150), 190) for _ in range(3)]
+    items += [(boat, rng.randint(100, 130), 170), (rocket, 120, 170)]
+    items += [(cloud, rng.randint(80, 110), 130) for _ in range(2)]
+    items += [(sun, 80, 130)] + [(star, rng.randint(35, 55), 65) for _ in range(3)]
+    scatter(d, rng, items, 200, 1580)
+
+
+def treats(d, rng):
+    items = [(apple, rng.randint(90, 120), 130) for _ in range(3)]
+    items += [(icecream, rng.randint(90, 115), 150) for _ in range(3)]
+    items += [(heart, rng.randint(60, 90), 85) for _ in range(3)]
+    items += [(butterfly, 55, 75)] * 2 + [(star, 45, 60)] * 3 + [(flower, 40, 100)] * 2
+    scatter(d, rng, items, 200, 1560)
+
+
+POOL = [(sun, 95, 150), (cloud, 95, 125), (butterfly, 60, 80), (star, 50, 62), (fish, 90, 135),
+        (balloon, 90, 135), (rocket, 115, 165), (car, 110, 130), (boat, 100, 130), (apple, 90, 105),
+        (icecream, 90, 125), (heart, 70, 80), (moon, 85, 95), (flower, 45, 100), (cat, 130, 150),
+        (owl, 120, 150), (house, 200, 170), (tree, 180, 150)]
+
+
+def surprise(d, rng):
+    chosen = [rng.choice(POOL) for _ in range(rng.randint(9, 12))]
+    chosen.sort(key=lambda t: -t[2])
+    items = []
+    for f, s, pr in chosen:
+        k = rng.uniform(0.85, 1.2)
+        items.append((f, int(s * k), int(pr * k)))
+    scatter(d, rng, items, 200, 1580)
+
+
 def mandala(d, rng):
     cx, cy = W // 2, H // 2 + 20
     rings = rng.randint(5, 6)
@@ -301,6 +392,9 @@ THEMES = {
     "Samundar (Sea)": sea,
     "Aasman (Sky)": sky,
     "Janwar (Animals)": animals,
+    "Gaadiyan (Vehicles)": vehicles,
+    "Mazedaar (Treats)": treats,
+    "Surprise (Sab kuch)": surprise,
     "Mandala": mandala,
 }
 
