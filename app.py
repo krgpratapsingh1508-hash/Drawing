@@ -577,13 +577,20 @@ def animals(d, rng):
     sprinkle(d, rng, placed, 190, 1600, 8)
 
 
+VEHICLES_NAMED = [(car, 150, "Car", "कार"), (boat, 140, "Boat", "नाव"), (rocket, 110, "Rocket", "रॉकेट")]
+
+
 def vehicles(d, rng):
-    items = [(car, rng.randint(110, 150), 190) for _ in range(3)]
-    items += [(boat, rng.randint(100, 130), 170), (rocket, 120, 170)]
-    items += [(cloud, rng.randint(80, 110), 130) for _ in range(2)]
-    items += [(sun, 80, 130)] + [(star, rng.randint(35, 55), 65) for _ in range(3)]
-    placed = scatter(d, rng, items, 200, 1580)
-    sprinkle(d, rng, placed, 200, 1580, 8)
+    """Ek bada vehicle + uske niche naam (English aur Hindi)."""
+    func, sz, en, hi = rng.choice(VEHICLES_NAMED)
+    func(d, W // 2, 740, int(sz * 2.0), rng)
+    d.text((W // 2, 1160), en, BLACK, 104)
+    if HAS_HINDI:
+        d.text((W // 2, 1285), hi, BLACK, 112, font=get_hindi_font)
+    placed = [(W // 2, 740, 400)] + [(W // 2 + dx, yy, 125) for dx in (-230, 0, 230) for yy in (1160, 1285)]
+    items = [(cloud, 90, 120)] * 2 + [(sun, 80, 130)] + [(star, 42, 55)] * 3 + [(butterfly, 55, 75)]
+    placed = scatter(d, rng, items, 190, 1600, placed)
+    sprinkle(d, rng, placed, 190, 1600, 8)
 
 
 def treats(d, rng):
