@@ -1619,36 +1619,45 @@ def make_abc_page(i):
 PHOTO_BOX = (70, 200, W - 70, H - 160)   # frame ke andar photo ki jagah
 
 
-def photo_sheet(raw, style=0, detail=5, thick=2, thr=242, title="Meri Drawing"):
-    """Photo (bytes) ko colouring/drawing sheet me badalta hai. style 0 = saaf outline, 1 = pencil sketch."""
+def photo_sheet(raw, detail=5, thick=2, level=5, title="Meri Drawing"):
+    """Photo (bytes) ki sirf outline banata hai - andar khali, taaki bachche rang bhar sakein.
+    Tarika: photo ko kam rangon ke bade hisson me baanto, phir hisson ki seemayein (borders) kheencho.
+    detail: kam = bade/simple hisse, zyada = chhote hisse bhi. level: kitne rang-hisse (zyada = zyada lines)."""
     im = Image.open(io.BytesIO(raw))
     im = ImageOps.exif_transpose(im)
     im.thumbnail((2400, 2400))
     im = im.convert("RGBA")
     bg = Image.new("RGBA", im.size, (255, 255, 255, 255))
     bg.alpha_composite(im)
-    g = bg.convert("L")
+    rgb = bg.convert("RGB")
     x0, y0, x1, y1 = PHOTO_BOX
     bw, bh = x1 - x0, y1 - y0
-    g = ImageOps.contain(g, (bw, bh), Image.LANCZOS)
-    g = ImageOps.autocontrast(g, cutoff=1)
-    g = g.filter(ImageFilter.MedianFilter(5)).filter(ImageFilter.GaussianBlur(1.2))   # photo ka noise/daane saaf
+    rgb = ImageOps.contain(rgb, (bw, bh), Image.LANCZOS)
+    rgb = ImageOps.autocontrast(rgb, cutoff=1)
+    # texture/daane mitao, par kinare (edges) bacha ke rakho
+    rgb = rgb.filter(ImageFilter.MedianFilter(5)).filter(ImageFilter.MedianFilter(5))
+    rgb = rgb.filter(ImageFilter.GaussianBlur(max(0.8, 3.0 - detail * 0.2)))
 
-    radius = max(2.0, 26 - detail * 2.2)                 # detail zyada -> chhota blur -> zyada lines
-    a = np.asarray(g, dtype=np.float32)
-    blur = np.asarray(ImageOps.invert(g).filter(ImageFilter.GaussianBlur(radius)), dtype=np.float32)
-    sketch = np.clip(a * 255.0 / (256.0 - blur), 0, 255)  # color-dodge = pencil sketch
+    colors = int(3 + level * 1.6)                                  # level zyada -> zyada rang-hisse
+    q = rgb.quantize(colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
+    q = q.filter(ImageFilter.ModeFilter(int(5 + 2 * (10 - detail) * 0.6) | 1))   # chhote tukde mita ke hisse saaf karo
+    lab = np.asarray(q)
+    edges = np.zeros(lab.shape, bool)
+    edges[1:, :] |= lab[1:, :] != lab[:-1, :]
+    edges[:, 1:] |= lab[:, 1:] != lab[:, :-1]
 
-    if style == 0:
-        lines = Image.fromarray(np.where(sketch < thr, 0, 255).astype(np.uint8))
-        soft = np.asarray(lines.filter(ImageFilter.GaussianBlur(1.6)), dtype=np.float32)
-        # akele chhote daag halke ho kar hat jate hain, asli lines bachti hain; thick jitna zyada utni moti line
-        out = Image.fromarray(np.where(soft < (105, 140, 175)[thick - 1], 0, 255).astype(np.uint8))
-    else:
-        out = ImageOps.autocontrast(Image.fromarray(sketch.astype(np.uint8)), cutoff=2)
+    # akele chhote daag hatao: sirf wahi pixel rakho jinke aas-paas ki lines ghani hon
+    mask = Image.fromarray((edges * 255).astype(np.uint8))
+    dens = np.asarray(mask.filter(ImageFilter.BoxBlur(4)), dtype=np.float32)
+    edges &= dens > 255 * 0.09
+    lines = Image.fromarray(np.where(edges, 0, 255).astype(np.uint8))
+    lines = lines.filter(ImageFilter.MinFilter((3, 3, 5)[thick - 1]))   # lines moti
+    if thick == 3:
+        lines = lines.filter(ImageFilter.MinFilter(3))
+    lines = lines.filter(ImageFilter.GaussianBlur(0.8)).point(lambda v: 0 if v < 150 else 255)  # kinare chikne
 
     page = Image.new("L", (W, H), 255)
-    page.paste(out, (x0 + (bw - out.width) // 2, y0 + (bh - out.height) // 2))
+    page.paste(lines, (x0 + (bw - lines.width) // 2, y0 + (bh - lines.height) // 2))
 
     cv = Canvas()
     frame(cv, (title or "Meri Drawing")[:24], "Photo Drawing")
@@ -1770,7 +1779,7 @@ def inject_css():
 # ===== Seekho UI (Ginti / Varnamala) ==========================================
 MODE_DRAW, MODE_NUM, MODE_ABC, MODE_HINDI = ("🎨 Drawing sheets", "🔢 Ginti (1 se 100)",
                                               "🔠 A to Z", "🔤 Hindi Varnamala")
-MODE_PHOTO = "📷 Photo → Drawing"
+MODE_PHOTO = "📷 Photo → Outline"
 
 
 @st.cache_data(show_spinner="Sheet ban rahi hai... ✏️", max_entries=120)
@@ -1854,50 +1863,48 @@ def learn_ui(mode):
                                mime="application/pdf", key=f"dlp_{key}")
 
 
-@st.cache_data(show_spinner="Drawing ban rahi hai... ✏️", max_entries=40)
-def photo_png(raw, style, detail, thick, thr, title):
-    return to_png(photo_sheet(raw, style, detail, thick, thr, title))
+@st.cache_data(show_spinner="Outline ban rahi hai... ✏️", max_entries=40)
+def photo_png(raw, detail, thick, level, title):
+    return to_png(photo_sheet(raw, detail, thick, level, title))
 
 
 def photo_ui():
-    st.title("📷 Photo se Drawing Sheet")
-    st.write("Apni photo upload karo — hum use rang bharne wali drawing sheet bana denge. 🖍️")
+    st.title("📷 Photo se Outline Sheet")
+    st.write("Apni photo upload karo — hum uski sirf outline bana denge, andar khali, "
+             "taaki aap rang bhar sako. 🖍️")
     files = st.file_uploader("Photo chuno (ek ya kai)", type=["png", "jpg", "jpeg", "webp", "bmp"],
                              accept_multiple_files=True, key="photo_files")
-    c1, c2 = st.columns(2)
-    style_name = c1.radio("Style", ["✏️ Saaf outline (rang bharne ke liye)", "🖍️ Pencil sketch"], key="photo_style")
-    title = c2.text_input("Sheet ka title", "Meri Drawing", max_chars=24, key="photo_title")
+    title = st.text_input("Sheet ka title", "Meri Drawing", max_chars=24, key="photo_title")
     s1, s2, s3 = st.columns(3)
-    detail = s1.slider("Detail (kam = simple, zyada = bahut lines)", 1, 10, 5, key="photo_detail")
-    thick = s2.slider("Line ki motai", 1, 3, 2, key="photo_thick")
-    thr = s3.slider("Lines kitni gehri", 225, 252, 242, key="photo_thr")
-    st.caption("Tip: saaf, roshan photo jisme ek hi cheez/chehra ho, sabse achhi drawing banati hai. "
-               "Lines kam ya zyada chahiye to Detail aur 'Lines kitni gehri' badlo.")
+    detail = s1.slider("Detail (kam = simple, zyada = bahut chhoti cheezein)", 1, 10, 5, key="photo_detail")
+    level = s2.slider("Kitni lines (kam = sirf mukhya, zyada = sab)", 1, 10, 5, key="photo_level")
+    thick = s3.slider("Line ki motai", 1, 3, 2, key="photo_thick")
+    st.caption("Tip: saaf, roshan photo jisme ek hi cheez/chehra ho, sabse achhi outline banati hai. "
+               "Lines uljhi hon to Detail ya 'Kitni lines' kam karo; lines kam hon to badhao.")
     if not files:
         st.info("⬆️ Upar photo upload karo. Ek saath kai photos bhi daal sakte ho.")
         return
-    style = 0 if style_name.startswith("✏️") else 1
     files = files[:20]
     pngs = []
     for k, f in enumerate(files):
         raw = f.getvalue()
         try:
-            png = photo_png(raw, style, detail, thick, thr, title)
+            png = photo_png(raw, detail, thick, level, title)
         except Exception:
             st.error(f"'{f.name}' photo nahi khul payi. Dusri photo (JPG/PNG) try karo.")
             continue
         pngs.append(png)
         a, b = st.columns(2)
         a.image(raw, caption=f"Original: {f.name}")
-        b.image(png, caption="Drawing sheet")
+        b.image(png, caption="Outline sheet")
         d1, d2 = b.columns(2)
-        stem = f"photo_drawing_{k + 1}"
+        stem = f"photo_outline_{k + 1}"
         d1.download_button("⬇️ PNG", png, file_name=f"{stem}.png", mime="image/png", key=f"ph_png_{k}")
         d2.download_button("📄 PDF", make_pdf([png]), file_name=f"{stem}.pdf", mime="application/pdf",
                            key=f"ph_pdf_{k}")
     if len(pngs) > 1:
         st.download_button(f"📦 Sab {len(pngs)} sheets ek PDF me", make_pdf(pngs),
-                           file_name="photo_drawings.pdf", mime="application/pdf", key="ph_all")
+                           file_name="photo_outlines.pdf", mime="application/pdf", key="ph_all")
 
 
 if "chosen" not in st.session_state:
