@@ -1,7 +1,7 @@
 """Bacho ki Drawing Book - ek hi file me (app + drawing engine).
 
 * 1,000,000,000 (1 arab) alag-alag sheets: har sheet number ki sheet hamesha wahi rehti hai.
-* Smooth lines (2x render), pyare chehre, frame, 10 themes.
+* Smooth lines (2x render), pyare chehre, frame, 11 themes (A se Z spelling sheets samet).
 * Sirf Streamlit + Pillow.
 """
 import io
@@ -72,13 +72,11 @@ class Canvas:
         self.d.text((xy[0] * self.s, xy[1] * self.s), text, fill=fill,
                     font=get_font(size * self.s), anchor=anchor)
 
-    def font_text(self, xy, text, fill, maker, size, anchor="mm", stroke=0, stroke_fill=None):
-        """maker(pixel_size) -> font. stroke>0 + fill=WHITE => khokhla (outline) akshar."""
-        kw = {}
-        if stroke:
-            kw = dict(stroke_width=int(stroke * self.s), stroke_fill=stroke_fill)
-        self.d.text((xy[0] * self.s, xy[1] * self.s), text, fill=fill,
-                    font=maker(size * self.s), anchor=anchor, **kw)
+    def text_outline(self, xy, text, size, anchor="mm", sw=5):
+        """Khokhla (outline wala) bada akshar - rang bharne ke liye."""
+        self.d.text((xy[0] * self.s, xy[1] * self.s), text, fill=WHITE,
+                    font=get_font(size * self.s), anchor=anchor,
+                    stroke_width=int(sw * self.s), stroke_fill=BLACK)
 
 
 # ----------------------------------------------------------------- helpers
@@ -487,6 +485,186 @@ def kite(d, x, y, r, rng):
     d.line([(x - r * 0.7, y), (x + r * 0.7, y)], fill=BLACK, width=LW - 2)
 
 
+# ---- A se Z ke naye objects
+def ball(d, x, y, r, rng):
+    circ(d, x, y, r)
+    d.ellipse([x - r * 0.5, y - r, x + r * 0.5, y + r], outline=BLACK, width=LW - 1)
+    d.ellipse([x - r * 0.12, y - r, x + r * 0.12, y + r], outline=BLACK, width=LW - 2)
+    d.line([(x - r, y), (x + r, y)], fill=BLACK, width=LW - 2)
+    circ(d, x, y, r * 0.22)
+    star(d, x, y, r * 0.2, rng)
+
+
+def elephant(d, x, y, r, rng):
+    for sx in (-1, 1):  # kaan
+        circ(d, x + sx * r * 0.95, y - r * 0.05, r * 0.55)
+        d.arc([x + sx * r * 0.95 - r * 0.32, y - r * 0.35, x + sx * r * 0.95 + r * 0.32, y + r * 0.25],
+              0, 360, fill=BLACK, width=LW - 3)
+    left, right = [], []  # sund
+    for i in range(21):
+        t = i / 20
+        cx, cy = x + r * 0.55 * t * t, y + r * 0.1 + t * r * 1.25
+        w = r * 0.24 * (1 - 0.45 * t)
+        left.append((cx - w, cy))
+        right.append((cx + w, cy))
+    poly(d, left + right[::-1])
+    for t in (0.35, 0.55, 0.75):
+        i = int(t * 20)
+        d.line([left[i], right[i]], fill=BLACK, width=LW - 3)
+    ell(d, x - r * 0.8, y - r * 0.9, x + r * 0.8, y + r * 0.7)
+    for sx in (-1, 1):
+        dot(d, x + sx * r * 0.32, y - r * 0.25, max(4, r * 0.07))
+        d.arc([x + sx * r * 0.52 - r * 0.14, y + r * 0.1, x + sx * r * 0.52 + r * 0.14, y + r * 0.4],
+              90 if sx < 0 else 270, 270 if sx < 0 else 450, fill=BLACK, width=LW - 3)
+    d.arc([x - r * 0.22, y - r * 0.8, x + r * 0.22, y - r * 0.4], 200, 340, fill=BLACK, width=LW - 3)
+
+
+def grapes(d, x, y, r, rng):
+    d.line([(x, y - r * 0.75), (x + r * 0.12, y - r * 1.05)], fill=BLACK, width=LW + 1)
+    poly(d, rot_ellipse(x + r * 0.4, y - r * 0.95, r * 0.36, r * 0.15, -0.45))
+    rr = r * 0.23
+    for row in range(4):
+        cnt = 4 - row
+        for c in range(cnt):
+            gx = x + (c - (cnt - 1) / 2) * rr * 2
+            gy = y - r * 0.55 + row * rr * 1.75
+            circ(d, gx, gy, rr)
+            d.arc([gx - rr * 0.55, gy - rr * 0.55, gx + rr * 0.1, gy + rr * 0.1], 190, 260,
+                  fill=BLACK, width=LW - 4)
+
+
+def jellyfish(d, x, y, r, rng):
+    ph = rng.random() * 3
+    for k in range(5):
+        bx = x - r * 0.8 + k * r * 0.4
+        pts = [(bx + math.sin(i * 0.9 + ph + k) * r * 0.1, y + i * r * 0.14) for i in range(11)]
+        d.line(pts, fill=BLACK, width=LW - 1, joint="curve")
+    poly(d, dome(x, y, r, r * 0.95))
+    for k in range(4):
+        d.arc([x - r + k * r * 0.5, y - r * 0.2, x - r + (k + 1) * r * 0.5, y + r * 0.2], 0, 180,
+              fill=BLACK, width=LW - 2)
+    for dx, dy in [(-0.55, -0.5), (0.55, -0.5), (0.0, -0.85)]:
+        circ(d, x + dx * r, y + dy * r, r * 0.07)
+    face(d, x, y - r * 0.3, r * 0.65)
+
+
+def nest(d, x, y, r, rng):
+    for dx, ang in [(-0.45, 0.25), (0.0, -0.1), (0.45, -0.3)]:
+        poly(d, rot_ellipse(x + dx * r, y - r * 0.25, r * 0.28, r * 0.4, ang + math.pi / 2))
+        dot(d, x + dx * r - r * 0.08, y - r * 0.3, max(3, r * 0.03))
+    bowl = [(x + r * math.cos(math.pi * i / 30), y + r * 0.7 * math.sin(math.pi * i / 30)) for i in range(31)]
+    poly(d, bowl)
+    for k in range(7):
+        sx = x - r * 0.8 + k * r * 0.27
+        d.line([(sx, y + r * 0.1), (sx + r * 0.25, y + r * 0.5 + (k % 2) * r * 0.1)], fill=BLACK, width=LW - 3)
+    for sx in (-1, 1):
+        d.line([(x + sx * r * 0.95, y + r * 0.05), (x + sx * r * 1.25, y - r * 0.15)], fill=BLACK, width=LW - 2)
+
+
+def pizza(d, x, y, r, rng):
+    poly(d, [(x - r * 0.85, y - r * 0.6), (x + r * 0.85, y - r * 0.6), (x, y + r * 1.05)])
+    d.rounded_rectangle([x - r * 0.95, y - r * 0.9, x + r * 0.95, y - r * 0.55], 30,
+                        fill=WHITE, outline=BLACK, width=LW)
+    for dx, dy, rr in [(-0.35, -0.2, 0.17), (0.35, -0.2, 0.17), (0.0, 0.2, 0.15), (0.0, 0.62, 0.08)]:
+        circ(d, x + dx * r, y + dy * r, rr * r)
+    for dx, dy in [(-0.12, -0.42), (0.55, -0.42), (-0.55, -0.42), (0.17, 0.42), (-0.18, 0.42)]:
+        dot(d, x + dx * r, y + dy * r, max(3, r * 0.03))
+
+
+def crown(d, x, y, r, rng):
+    poly(d, [(x - r, y + r * 0.5), (x - r, y - r * 0.4), (x - r * 0.5, y + r * 0.05), (x, y - r * 0.7),
+             (x + r * 0.5, y + r * 0.05), (x + r, y - r * 0.4), (x + r, y + r * 0.5)])
+    for tx, ty in [(-1, -0.4), (0, -0.7), (1, -0.4)]:
+        circ(d, x + tx * r, y + ty * r - r * 0.1, r * 0.1)
+    rect(d, x - r, y + r * 0.5, x + r, y + r * 0.8)
+    for gx in (-0.6, 0, 0.6):
+        circ(d, x + gx * r, y + r * 0.65, r * 0.07)
+    star(d, x, y + r * 0.1, r * 0.28, rng)
+
+
+def umbrella(d, x, y, r, rng):
+    d.line([(x, y), (x, y + r * 1.2)], fill=BLACK, width=LW)
+    d.arc([x - r * 0.3, y + r * 1.05, x, y + r * 1.4], 0, 180, fill=BLACK, width=LW)
+    poly(d, dome(x, y, r, r * 0.9))
+    for k in range(4):
+        d.arc([x - r + k * r * 0.5, y - r * 0.22, x - r + (k + 1) * r * 0.5, y + r * 0.22], 0, 180,
+              fill=BLACK, width=LW - 2)
+    for k in (1, 3):
+        d.line([(x, y - r * 0.9), (x - r + k * r * 0.5, y)], fill=BLACK, width=LW - 3)
+    d.line([(x, y - r * 0.9), (x, y)], fill=BLACK, width=LW - 3)
+    d.line([(x, y - r * 0.9), (x, y - r * 1.1)], fill=BLACK, width=LW)
+
+
+def vase(d, x, y, r, rng):
+    top, h = y - r * 0.5, r * 1.6
+    for dx, tilt in [(-0.45, -0.3), (0.0, 0.0), (0.45, 0.3)]:
+        d.line([(x + dx * r * 0.3, top), (x + dx * r, top - r * 0.95)], fill=BLACK, width=LW - 1)
+        circ(d, x + dx * r, top - r * 1.1, r * 0.22)
+        circ(d, x + dx * r, top - r * 1.1, r * 0.09)
+    left, right = [], []
+    for i in range(31):
+        t = i / 30
+        w = r * (0.28 + 0.5 * math.sin(math.pi * t) ** 0.8)
+        left.append((x - w, top + t * h))
+        right.append((x + w, top + t * h))
+    poly(d, left + right[::-1])
+    ell(d, x - r * 0.38, top - r * 0.08, x + r * 0.38, top + r * 0.08)
+    heart(d, x, top + h * 0.5, r * 0.3, rng)
+    for k in (-1, 1):
+        d.arc([x + k * r * 0.45 - r * 0.2, top + h * 0.2, x + k * r * 0.45 + r * 0.2, top + h * 0.35],
+              0, 180, fill=BLACK, width=LW - 3)
+
+
+def watermelon(d, x, y, r, rng):
+    pts = [(x + r * math.cos(math.pi * i / 40), y + r * math.sin(math.pi * i / 40)) for i in range(41)]
+    poly(d, pts)
+    d.arc([x - r * 0.85, y - r * 0.85, x + r * 0.85, y + r * 0.85], 0, 180, fill=BLACK, width=LW - 2)
+    for dx, dy, a in [(-0.45, 0.25, 0.5), (0.0, 0.5, 0), (0.45, 0.25, -0.5), (-0.2, 0.15, 0.3), (0.2, 0.15, -0.3)]:
+        poly(d, rot_ellipse(x + dx * r, y + dy * r, r * 0.07, r * 0.12, a))
+    d.line([(x - r * 0.1, y + r * 0.7), (x + r * 0.1, y + r * 0.7)], fill=BLACK, width=LW - 3)
+
+
+def xylophone(d, x, y, r, rng):
+    for sx in (-1, 1):
+        d.line([(x + sx * r * 0.5, y - r), (x + sx * r * 0.98, y + r * 1.0)], fill=BLACK, width=LW)
+    for k in range(7):
+        hw = r * (0.55 + 0.05 * k)
+        cy = y - r * 0.85 + k * r * 0.3
+        rect(d, x - hw, cy - r * 0.11, x + hw, cy + r * 0.11)
+        circ(d, x - hw * 0.8, cy, r * 0.03)
+        circ(d, x + hw * 0.8, cy, r * 0.03)
+    for sx in (-1, 1):
+        d.line([(x + sx * r * 0.55, y - r * 1.65), (x + sx * r * 0.2, y - r * 1.15)], fill=BLACK, width=LW)
+        circ(d, x + sx * r * 0.57, y - r * 1.68, r * 0.1)
+
+
+def yoyo(d, x, y, r, rng):
+    pts = [(x + math.sin(i * 0.8) * r * 0.12, y + i * r * 0.2) for i in range(12)]
+    d.line(pts, fill=BLACK, width=LW - 2, joint="curve")
+    circ(d, pts[-1][0], pts[-1][1] + r * 0.12, r * 0.14)
+    circ(d, x, y, r)
+    d.ellipse([x - r * 0.82, y - r * 0.82, x + r * 0.82, y + r * 0.82], outline=BLACK, width=LW - 3)
+    star(d, x, y, r * 0.62, rng)
+
+
+def zebra(d, x, y, r, rng):
+    for sx in (-1, 1):  # kaan
+        poly(d, [(x + sx * r * 0.5, y - r * 0.8), (x + sx * r * 0.95, y - r * 1.4), (x + sx * r * 0.18, y - r * 0.95)])
+    ell(d, x - r * 0.7, y - r * 1.0, x + r * 0.7, y + r * 0.45)
+    for sx in (-1, 1):  # dhaariyan
+        for k in range(3):
+            d.polygon(rot_ellipse(x + sx * r * 0.52, y - r * 0.68 + k * r * 0.28, r * 0.18, r * 0.06,
+                                  sx * 0.45), fill=BLACK)
+    for k in (-1, 0, 1):  # maathe ki dhaari
+        d.polygon([(x + k * r * 0.2 - r * 0.05, y - r * 0.98), (x + k * r * 0.2 + r * 0.05, y - r * 0.98),
+                   (x + k * r * 0.15, y - r * 0.55)], fill=BLACK)
+    ell(d, x - r * 0.48, y + r * 0.05, x + r * 0.48, y + r * 0.95)
+    for sx in (-1, 1):
+        dot(d, x + sx * r * 0.33, y - r * 0.22, max(4, r * 0.06))
+        dot(d, x + sx * r * 0.15, y + r * 0.45, max(4, r * 0.05))
+    d.arc([x - r * 0.25, y + r * 0.45, x + r * 0.25, y + r * 0.8], 20, 160, fill=BLACK, width=LW - 2)
+
+
 # ----------------------------------------------------------------- scenes
 def scatter(d, rng, items, y0, y1, placed=None):
     """Items ko bina takraye random jagah par rakhta hai. Placed list lautata hai.
@@ -685,7 +863,79 @@ def mandala(d, rng):
     dot(d, cx, cy, 8)
 
 
+# ----------------------------------------------------------------- A se Z (Alphabet) sheet
+LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+ALPHA = [("Apple", apple), ("Ball", ball), ("Cat", cat), ("Duck", duck), ("Elephant", elephant),
+         ("Fish", fish), ("Grapes", grapes), ("House", house_c), ("Icecream", icecream),
+         ("Jellyfish", jellyfish), ("Kite", kite), ("Ladybug", ladybug), ("Mushroom", mushroom),
+         ("Nest", nest), ("Owl", owl), ("Pizza", pizza), ("Queen", crown), ("Rainbow", rainbow_c),
+         ("Sun", sun), ("Turtle", turtle), ("Umbrella", umbrella), ("Vase", vase),
+         ("Watermelon", watermelon), ("Xylophone", xylophone), ("Yoyo", yoyo), ("Zebra", zebra)]
+GRAY = (160, 160, 160)
+
+
+@lru_cache(maxsize=32)
+def fit_object(i):
+    """Object ko ek test canvas par banake naap leta hai, taaki har picture
+    barabar size me, bilkul beech me aaye (r, x-offset, y-offset)."""
+    r0 = 200
+    cv = Canvas(1)
+    ALPHA[i][1](cv, W // 2, H // 2, r0, random.Random(i))
+    ink = cv.img.convert("L").point(lambda v: 255 if v < 200 else 0)
+    x0, y0, x1, y1 = ink.getbbox()
+    sc = min(740 / (x1 - x0), 620 / (y1 - y0))
+    return r0 * sc, ((x0 + x1) / 2 - W / 2) * sc, ((y0 + y1) / 2 - H / 2) * sc
+
+
+def alpha_index(n):
+    return ((n - 1) // len(THEMES)) % 26
+
+
+def alpha_sheet(i, book=1):
+    """Letter i (0=A) ki sheet ka number. book = alag decoration wali kitab."""
+    return ((book - 1) * 26 + i) * len(THEMES) + 1
+
+
+def alphabet(d, rng, n=1):
+    i = alpha_index(n)
+    letter, (word, func) = LETTERS[i], ALPHA[i]
+    # bade khokhle letters (rang bharne ke liye)
+    d.text_outline((W // 2 - 200, 455), letter, 300, "ms", 6)
+    d.text_outline((W // 2 + 200, 455), letter.lower(), 300, "ms", 6)
+    # "A for Apple" patti
+    d.rounded_rectangle([W // 2 - 310, 490, W // 2 + 310, 575], 42, fill=WHITE, outline=BLACK, width=6)
+    d.text((W // 2, 533), f"{letter} for {word}", BLACK, 54)
+    # picture
+    r, ox, oy = fit_object(i)
+    cx, cy = W // 2, 940
+    func(d, cx - ox, cy - oy, r, random.Random(i))
+    # spelling ke dibbe
+    k = len(word)
+    gap = 14
+    bw = min(128, (W - 260 - gap * (k - 1)) / k)
+    bh = 132
+    x0 = (W - (bw * k + gap * (k - 1))) / 2
+    yb = 1335
+    for j, ch in enumerate(word):
+        bx = x0 + j * (bw + gap)
+        d.rounded_rectangle([bx, yb - bh / 2, bx + bw, yb + bh / 2], 22, fill=WHITE,
+                            outline=BLACK, width=8 if j == 0 else 4)
+        d.text((bx + bw / 2, yb + bh * 0.3), ch, BLACK, bw * 0.8, "ms")
+    # likhne ki practice
+    d.text((W // 2, 1525), word, GRAY, 100, "ms")
+    d.line([(110, 1535), (W - 110, 1535)], fill=BLACK, width=3)
+    d.line([(110, 1450), (W - 110, 1450)], fill=GRAY, width=2)
+    # khali jagah me taare/dil
+    placed = [(cx, cy, 400), (W // 2 - 200, 340, 170), (W // 2 + 200, 340, 150)]
+    placed += [(W // 2 + dx, 533, 70) for dx in (-240, -120, 0, 120, 240)]
+    placed += [(x, yb, 85) for x in range(110, W - 100, 150)]
+    placed += [(x, 1495, 75) for x in range(110, W - 100, 150)]
+    sprinkle(d, rng, placed, 200, 1600, 14)
+
+
+ALPHA_THEME = "A se Z (Alphabet) 🔤"
 THEMES = {
+    ALPHA_THEME: alphabet,
     "Bagicha (Garden)": garden,
     "Samundar (Sea)": sea,
     "Aasman (Sky)": sky,
@@ -698,6 +948,7 @@ THEMES = {
     "Mandala": mandala,
 }
 TITLES = {
+    ALPHA_THEME: "A se Z Seekhein",
     "Bagicha (Garden)": "Mera Pyara Bagicha",
     "Samundar (Sea)": "Samundar ki Sair",
     "Aasman (Sky)": "Aasman me Udaan",
@@ -715,6 +966,14 @@ THEME_NAMES = list(THEMES)
 def theme_of(n):
     """Sheet number se theme tay hota hai (1,2,3... alag-alag themes)."""
     return THEME_NAMES[(n - 1) % len(THEME_NAMES)]
+
+
+def caption_of(n):
+    t = theme_of(n)
+    if t == ALPHA_THEME:
+        i = alpha_index(n)
+        return f"Sheet No. {n:,} · {LETTERS[i]} for {ALPHA[i][0]}"
+    return f"Sheet No. {n:,} · {t}"
 
 
 # ----------------------------------------------------------------- page / book
@@ -739,7 +998,10 @@ def make_page(n):
     theme = theme_of(n)
     rng = random.Random(n)
     cv = Canvas()
-    THEMES[theme](cv, rng)
+    if theme == ALPHA_THEME:
+        alphabet(cv, rng, n)
+    else:
+        THEMES[theme](cv, rng)
     frame(cv, theme, n)
     return cv.img.resize((W, H), Image.LANCZOS).convert("L")
 
@@ -758,7 +1020,33 @@ def make_pdf(pngs):
 
 
 # ===== UI =====================================================================
-st.set_page_config(page_title="Drawing Book", page_icon="🎨", layout="wide")
+st.set_page_config(page_title="Bacho ki Drawing Book", page_icon="🎨", layout="wide")
+
+st.markdown("""
+<style>
+.stApp {background: linear-gradient(135deg,#fff8e7 0%,#ffeaf4 45%,#e6f4ff 100%);}
+[data-testid="stHeader"] {background: transparent;}
+[data-testid="stSidebar"] {background: linear-gradient(180deg,#fff3c9,#ffe0ef);}
+.stMarkdown, .stMarkdown p, label, [data-testid="stCaptionContainer"], h1, h2, h3 {color:#3a3355 !important;}
+.hero {background: linear-gradient(100deg,#ff6fa5 0%,#ffa94d 35%,#7ed957 68%,#3db6ff 100%);
+       border-radius: 30px; padding: 26px 20px; text-align:center; margin-bottom: 18px;
+       box-shadow: 0 10px 28px rgba(255,111,165,.35);}
+.hero h1 {color:#fff !important; font-size: 2.6rem; margin:0; text-shadow: 3px 3px 0 rgba(0,0,0,.18);}
+.hero p {color:#fff !important; font-size:1.1rem; margin:8px 0 0 0; font-weight:600;}
+.chips {display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:14px;}
+.chip {background:rgba(255,255,255,.9); color:#3a3355; border-radius:999px; padding:5px 16px;
+       font-weight:700; font-size:.92rem;}
+.stButton > button, .stDownloadButton > button {border-radius: 999px; font-weight: 700;
+       border: 2px solid #ffb3d1; transition: transform .12s, box-shadow .12s;}
+.stButton > button:hover, .stDownloadButton > button:hover {transform: translateY(-2px) scale(1.03);
+       box-shadow: 0 6px 14px rgba(0,0,0,.15); border-color:#ff6fa5;}
+.stButton > button[kind="primary"] {background: linear-gradient(90deg,#ff6fa5,#ff9a4d); border:none; color:#fff;}
+[data-testid="stImage"] img {border-radius: 14px; border: 8px solid #fff;
+       box-shadow: 0 12px 30px rgba(80,60,120,.25);}
+[data-testid="stExpander"], [data-testid="stVerticalBlockBorderWrapper"] {border-radius: 20px;
+       background: rgba(255,255,255,.65);}
+</style>
+""", unsafe_allow_html=True)
 
 SINGLE, GALLERY = "📄 Ek sheet", "🖼️ Gallery (6 sheets)"
 
@@ -806,6 +1094,18 @@ def cb_open(n):
     st.session_state.view = SINGLE
 
 
+def cb_letter(i):
+    if ALPHA_THEME not in st.session_state.chosen:
+        st.session_state.chosen = list(st.session_state.chosen) + [ALPHA_THEME]
+    st.session_state.sheet_no = alpha_sheet(i, int(st.session_state.get("book_v", 1)))
+    st.session_state.view = SINGLE
+
+
+def build_pack(nums):
+    with st.spinner("Pack ban raha hai... thoda ruko ✏️"):
+        st.session_state.pack = (nums, make_pdf([sheet_png(m) for m in nums]))
+
+
 if "chosen" not in st.session_state:
     st.session_state.chosen = THEME_NAMES[:]
 if "view" not in st.session_state:
@@ -813,22 +1113,47 @@ if "view" not in st.session_state:
 if "sheet_no" not in st.session_state:
     cb_random()
 
-st.title("🎨 Bacho ki Drawing Book")
-st.write(f"**{TOTAL:,} alag-alag drawing sheets!** Random dabao ya number likho — "
-         "download karo, print karo aur rang bharo. 🖍️")
+st.markdown(f"""
+<div class="hero">
+  <h1>🎨 Bacho ki Drawing Book</h1>
+  <p>Rang bharo, seekho aur maza karo! 🖍️</p>
+  <div class="chips">
+    <span class="chip">📚 {TOTAL:,} sheets</span>
+    <span class="chip">🔤 A se Z spelling</span>
+    <span class="chip">🎭 {len(THEME_NAMES)} themes</span>
+    <span class="chip">🖨️ Print ready</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 with st.sidebar:
-    st.header("Settings")
+    st.header("⚙️ Settings")
     st.radio("Kaise dekhna hai?", [SINGLE, GALLERY], key="view")
     st.multiselect("Kaunse themes?", THEME_NAMES, key="chosen")
     st.caption("Har sheet number ki sheet hamesha wahi rehti hai — pasand aayi sheet ka number "
                "yaad rakho, baad me wapas khol lo.")
 
-b1, b2, b3, b4 = st.columns([1, 1.2, 1, 2])
-b1.button("⬅️ Pichli", on_click=cb_move, args=(-1,))
-b2.button("🎲 Random sheet", type="primary", on_click=cb_random)
-b3.button("Agli ➡️", on_click=cb_move, args=(1,))
-b4.number_input(f"Sheet number (1 se {TOTAL:,})", min_value=1, max_value=TOTAL, step=1, key="sheet_no")
+with st.container(border=True):
+    b1, b2, b3, b4 = st.columns([1, 1.2, 1, 2])
+    b1.button("⬅️ Pichli", on_click=cb_move, args=(-1,), use_container_width=True)
+    b2.button("🎲 Random sheet", type="primary", on_click=cb_random, use_container_width=True)
+    b3.button("Agli ➡️", on_click=cb_move, args=(1,), use_container_width=True)
+    b4.number_input(f"Sheet number (1 se {TOTAL:,})", min_value=1, max_value=TOTAL, step=1, key="sheet_no")
+
+with st.expander("🔤 A se Z — letter chuno (picture + spelling)", expanded=True):
+    for start in (0, 13):
+        cols = st.columns(13)
+        for col, i in zip(cols, range(start, start + 13)):
+            col.button(LETTERS[i], key=f"let_{i}", on_click=cb_letter, args=(i,),
+                       use_container_width=True, help=f"{LETTERS[i]} for {ALPHA[i][0]}")
+    v1, v2 = st.columns([1, 2])
+    v1.number_input("Kitab number (alag decoration)", min_value=1, max_value=1000, step=1, key="book_v")
+    with v2:
+        st.write("")
+        st.write("")
+        if st.button("📘 Poori A–Z kitab (26 pages PDF) banao"):
+            bv = int(st.session_state.get("book_v", 1))
+            build_pack([alpha_sheet(i, bv) for i in range(26)])
 
 n = int(st.session_state.sheet_no)
 
@@ -836,12 +1161,12 @@ if st.session_state.view == SINGLE:
     png = sheet_png(n)
     _, mid, _ = st.columns([1, 2, 1])
     with mid:
-        st.image(png, caption=f"Sheet No. {n:,} · {theme_of(n)}")
+        st.image(png, caption=caption_of(n))
         c1, c2 = st.columns(2)
         c1.download_button("⬇️ PNG download", png, file_name=f"drawing_sheet_{n}.png",
-                           mime="image/png", key=f"png_{n}")
+                           mime="image/png", key=f"png_{n}", use_container_width=True)
         c2.download_button("📄 PDF download", make_pdf([png]), file_name=f"drawing_sheet_{n}.pdf",
-                           mime="application/pdf", key=f"pdf_{n}")
+                           mime="application/pdf", key=f"pdf_{n}", use_container_width=True)
 else:
     al = allowed_themes()
     nums = [n]
@@ -852,10 +1177,11 @@ else:
         for col, m in zip(cols, row):
             with col:
                 png = sheet_png(m)
-                st.image(png, caption=f"Sheet No. {m:,} · {theme_of(m)}")
-                st.button("🔍 Ye sheet kholo", key=f"open_{m}", on_click=cb_open, args=(m,))
+                st.image(png, caption=caption_of(m))
+                st.button("🔍 Ye sheet kholo", key=f"open_{m}", on_click=cb_open, args=(m,),
+                          use_container_width=True)
                 st.download_button("⬇️ Download", png, file_name=f"drawing_sheet_{m}.png",
-                                   mime="image/png", key=f"g_png_{m}")
+                                   mime="image/png", key=f"g_png_{m}", use_container_width=True)
 
 with st.expander("🖨️ Print pack — kai sheets ek hi PDF me"):
     k = st.slider("Kitni sheets?", 1, 20, 6)
@@ -872,10 +1198,14 @@ with st.expander("🖨️ Print pack — kai sheets ek hi PDF me"):
             nums = [n]
             while len(nums) < k:
                 nums.append(step_sheet(nums[-1], 1, al))
-        with st.spinner("Pack ban raha hai..."):
-            st.session_state.pack = (nums, make_pdf([sheet_png(m) for m in nums]))
-    if "pack" in st.session_state:
-        nums, pdf = st.session_state.pack
-        st.write("Sheet numbers: " + ", ".join(f"{m:,}" for m in nums))
+        build_pack(nums)
+
+if "pack" in st.session_state:
+    nums, pdf = st.session_state.pack
+    with st.container(border=True):
+        st.write("✅ Pack taiyar! Sheet numbers: " + ", ".join(f"{m:,}" for m in nums))
         st.download_button(f"📄 {len(nums)} sheets ka PDF download karo", pdf,
-                           file_name="drawing_pack.pdf", mime="application/pdf", key="dl_pack")
+                           file_name="drawing_pack.pdf", mime="application/pdf", key="dl_pack",
+                           type="primary")
+
+st.caption("Made with ❤️ for little artists")
