@@ -1102,6 +1102,51 @@ def make_letter_page(i):
 
 
 
+
+# ----------------------------------------------------------------- A to Z
+ALPHA = [
+    ("A", "Apple", "apple"), ("B", "Butterfly", "butterfly"), ("C", "Cat", "cat"), ("D", "Duck", "duck"),
+    ("E", "Elephant", None), ("F", "Fish", "fish"), ("G", "Grapes", "grapes"), ("H", "House", "house"),
+    ("I", "Ice cream", "icecream"), ("J", "Juice", None), ("K", "Kite", "kite"), ("L", "Ladybug", "ladybug"),
+    ("M", "Mango", "mango"), ("N", "Nest", None), ("O", "Owl", "owl"), ("P", "Pizza", None),
+    ("Q", "Queen", None), ("R", "Rabbit", "rabbit"), ("S", "Sun", "sun"), ("T", "Tomato", "tomato"),
+    ("U", "Umbrella", "umbrella"), ("V", "Van", None), ("W", "Watch", None), ("X", "Xylophone", None),
+    ("Y", "Yo-yo", None), ("Z", "Zebra", None),
+]
+ABC_PICS = {
+    "apple": (apple, 160), "butterfly": (butterfly, 150), "cat": (cat, 150), "duck": (duck, 120),
+    "fish": (fish, 130), "grapes": (grapes, 170), "house": (house_c, 230), "icecream": (icecream, 130),
+    "kite": (_kite_pic, 90), "ladybug": (ladybug, 140), "mango": (mango, 175), "owl": (owl, 160),
+    "rabbit": (rabbit, 105), "sun": (sun, 110), "tomato": (tomato, 150), "umbrella": (umbrella, 150),
+}
+
+
+def make_abc_page(i):
+    """A to Z sheet i (1..26): khokhla Aa, chitra, 'A for Apple', capital + small letters ki practice."""
+    up, word, pic = ALPHA[i - 1]
+    lo = up.lower()
+    rng = random.Random(i)
+    cv = Canvas()
+    cv.text((335, 450), up + lo, WHITE, 240 if up in "MW" else 300, stroke=8)
+    if pic:
+        func, sz = ABC_PICS[pic]
+        func(cv, 880, 450, sz, rng)
+    else:
+        cv.rounded_rectangle([650, 250, 1110, 650], 40, outline=BLACK, width=5)
+        cv.text((880, 420), "Yahan apna", GRAY, 52)
+        cv.text((880, 490), "chitra banao", GRAY, 52)
+    cv.text((W // 2, 790), f"{up} for {word}", BLACK, 110)
+    cv.text((100, 950), "Likho (upar se trace karo):", BLACK, 42, "lm")
+    for row, cy in enumerate((1045, 1190, 1335, 1480)):
+        for yy in (cy - 65, cy + 65):
+            cv.line([(95, yy), (W - 95, yy)], fill="#c8c8c8", width=3)
+        for k in range(7):
+            if k < (7, 3, 1, 0)[row]:
+                cv.text((150 + k * 160, cy), up if row % 2 == 0 else lo, GRAY, 120)
+    frame(cv, "A to Z", f"Letter {i} / 26")
+    return cv.img.resize((W, H), Image.LANCZOS).convert("L")
+
+
 # ===== UI =====================================================================
 st.set_page_config(page_title="Drawing Book", page_icon="🎨", layout="wide")
 
@@ -1153,18 +1198,21 @@ def cb_open(n):
 
 
 # ===== Seekho UI (Ginti / Varnamala) ==========================================
-MODE_DRAW, MODE_NUM, MODE_HINDI = "🎨 Drawing sheets", "🔢 Ginti (1 se 100)", "🔤 Hindi Varnamala"
+MODE_DRAW, MODE_NUM, MODE_ABC, MODE_HINDI = ("🎨 Drawing sheets", "🔢 Ginti (1 se 100)",
+                                              "🔠 A to Z", "🔤 Hindi Varnamala")
 
 
 @st.cache_data(show_spinner="Sheet ban rahi hai... ✏️", max_entries=120)
-def learn_png(is_num, i):
-    return to_png(make_number_page(i) if is_num else make_letter_page(i))
+def learn_png(kind, i):
+    return to_png({"num": make_number_page, "abc": make_abc_page, "hindi": make_letter_page}[kind](i))
 
 
 def learn_ui(mode):
     is_num = mode == MODE_NUM
-    total = 100 if is_num else len(LETTERS)
-    key = "ginti_no" if is_num else "akshar_no"
+    is_abc = mode == MODE_ABC
+    kind = "num" if is_num else "abc" if is_abc else "hindi"
+    total = 100 if is_num else 26 if is_abc else len(LETTERS)
+    key = {"num": "ginti_no", "abc": "abc_no", "hindi": "akshar_no"}[kind]
     if key not in st.session_state:
         st.session_state[key] = 1
 
@@ -1174,6 +1222,9 @@ def learn_ui(mode):
     if is_num:
         st.title("🔢 Ginti Seekho — 1 se 100")
         st.write("Har sheet par: khokhla ank (rang bharo), English + Hindi naam, ungliyan aur ginne ki cheezein. 🖍️")
+    elif is_abc:
+        st.title("🔠 A to Z — Alphabet")
+        st.write("A for Apple, B for Butterfly... khokhla letter, chitra aur capital + small letters likhne ki practice. 🖍️")
     else:
         st.title("🔤 Hindi Varnamala — अ से ज्ञ")
         st.write("Swar aur vyanjan: akshar, shabd, chitra aur likhne ki practice. (अ से अनार, आ से आम...) 🖍️")
@@ -1193,17 +1244,20 @@ def learn_ui(mode):
     c2.button("Agli ➡️", on_click=step, args=(1,), key=f"next_{key}")
     if is_num:
         c3.number_input("Number", min_value=1, max_value=total, step=1, key=key)
+    elif is_abc:
+        c3.selectbox("Letter chuno", list(range(1, 27)), key=key,
+                     format_func=lambda i: f"{ALPHA[i - 1][0]}  ({ALPHA[i - 1][1]})")
     else:
         c3.selectbox("Akshar chuno", list(range(1, total + 1)), key=key,
                      format_func=lambda i: f"{LETTERS[i - 1][0]}  ({LETTERS[i - 1][1]})")
 
     i = int(st.session_state[key])
-    png = learn_png(is_num, i)
+    png = learn_png(kind, i)
     _, mid, _ = st.columns([1, 2, 1])
     with mid:
         st.image(png, caption=f"Sheet {i} / {total}")
         d1, d2 = st.columns(2)
-        stem = "ginti" if is_num else "varnamala"
+        stem = {"num": "ginti", "abc": "a_to_z", "hindi": "varnamala"}[kind]
         d1.download_button("⬇️ PNG download", png, file_name=f"{stem}_{i}.png", mime="image/png", key=f"lp_{key}_{i}")
         d2.download_button("📄 PDF download", make_pdf([png]), file_name=f"{stem}_{i}.pdf",
                            mime="application/pdf", key=f"lf_{key}_{i}")
@@ -1215,11 +1269,11 @@ def learn_ui(mode):
             st.caption("Ek PDF me max 30 sheets — baaki ke liye dobara pack banao.")
         if st.button("📦 Pack banao", key=f"mk_{key}"):
             with st.spinner("Pack ban raha hai..."):
-                st.session_state[f"pack_{key}"] = (a, b, make_pdf([learn_png(is_num, m) for m in range(a, b + 1)]))
+                st.session_state[f"pack_{key}"] = (a, b, make_pdf([learn_png(kind, m) for m in range(a, b + 1)]))
         if f"pack_{key}" in st.session_state:
             pa, pb, pdf = st.session_state[f"pack_{key}"]
             st.download_button(f"📄 Sheets {pa}–{pb} ka PDF download karo", pdf,
-                               file_name=f"{'ginti' if is_num else 'varnamala'}_{pa}_{pb}.pdf",
+                               file_name=f"{ {'num': 'ginti', 'abc': 'a_to_z', 'hindi': 'varnamala'}[kind] }_{pa}_{pb}.pdf",
                                mime="application/pdf", key=f"dlp_{key}")
 
 
@@ -1230,7 +1284,7 @@ if "view" not in st.session_state:
 if "sheet_no" not in st.session_state:
     cb_random()
 
-st.sidebar.radio("Kya chahiye?", [MODE_DRAW, MODE_NUM, MODE_HINDI], key="mode")
+st.sidebar.radio("Kya chahiye?", [MODE_DRAW, MODE_NUM, MODE_ABC, MODE_HINDI], key="mode")
 if st.session_state.mode != MODE_DRAW:
     learn_ui(st.session_state.mode)
     st.stop()
