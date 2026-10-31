@@ -1619,10 +1619,42 @@ def make_abc_page(i):
 PHOTO_BOX = (70, 200, W - 70, H - 160)   # frame ke andar photo ki jagah
 
 
+def keep_big_parts(mask, min_size):
+    """mask (bool) me se sirf wahi jude hue tukde rakho jinme kam se kam min_size pixel hon.
+    Isse chhote daag/khurdure hat jate hain aur lambi, saaf lines bachti hain."""
+    h, w = mask.shape
+    pad = np.zeros((h + 2, w + 2), np.uint8)
+    pad[1:-1, 1:-1] = mask
+    w2 = w + 2
+    flat = pad.ravel()
+    seen = bytearray(flat.size)
+    keep = bytearray(flat.size)
+    offs = (-w2 - 1, -w2, -w2 + 1, -1, 1, w2 - 1, w2, w2 + 1)
+    for start in np.flatnonzero(flat).tolist():
+        if seen[start]:
+            continue
+        seen[start] = 1
+        comp = [start]
+        stack = [start]
+        while stack:
+            p = stack.pop()
+            for o in offs:
+                q = p + o
+                if flat[q] and not seen[q]:
+                    seen[q] = 1
+                    comp.append(q)
+                    stack.append(q)
+        if len(comp) >= min_size:
+            for p in comp:
+                keep[p] = 1
+    return np.frombuffer(bytes(keep), np.uint8).reshape(h + 2, w2)[1:-1, 1:-1].astype(bool)
+
+
 def photo_sheet(raw, detail=5, thick=2, level=5, title="Meri Drawing"):
-    """Photo (bytes) ki sirf outline banata hai - andar khali, taaki bachche rang bhar sakein.
-    Tarika: photo ko kam rangon ke bade hisson me baanto, phir hisson ki seemayein (borders) kheencho.
-    detail: kam = bade/simple hisse, zyada = chhote hisse bhi. level: kitne rang-hisse (zyada = zyada lines)."""
+    """Photo (bytes) ki sirf saaf outline banata hai - andar khali, taaki bachche rang bhar sakein.
+    Tarika: photo ko halka smooth karo, jahan rang/roshni tezi se badle wahan patli line kheencho,
+    phir chhote daag aur tooti-phooti lakeerein hata do, sirf lambi saaf lines rakho.
+    detail: kam = simple/badi lines, zyada = chhoti cheezein bhi. level: kitni lines (zyada = halki lines bhi)."""
     im = Image.open(io.BytesIO(raw))
     im = ImageOps.exif_transpose(im)
     im.thumbnail((2400, 2400))
@@ -1634,27 +1666,34 @@ def photo_sheet(raw, detail=5, thick=2, level=5, title="Meri Drawing"):
     bw, bh = x1 - x0, y1 - y0
     rgb = ImageOps.contain(rgb, (bw, bh), Image.LANCZOS)
     rgb = ImageOps.autocontrast(rgb, cutoff=1)
-    # texture/daane mitao, par kinare (edges) bacha ke rakho
-    rgb = rgb.filter(ImageFilter.MedianFilter(5)).filter(ImageFilter.MedianFilter(5))
-    rgb = rgb.filter(ImageFilter.GaussianBlur(max(0.8, 3.0 - detail * 0.2)))
+    rgb = rgb.filter(ImageFilter.MedianFilter(5))                  # daane / noise saaf
 
-    colors = int(3 + level * 1.6)                                  # level zyada -> zyada rang-hisse
-    q = rgb.quantize(colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
-    q = q.filter(ImageFilter.ModeFilter(int(5 + 2 * (10 - detail) * 0.6) | 1))   # chhote tukde mita ke hisse saaf karo
-    lab = np.asarray(q)
-    edges = np.zeros(lab.shape, bool)
-    edges[1:, :] |= lab[1:, :] != lab[:-1, :]
-    edges[:, 1:] |= lab[:, 1:] != lab[:, :-1]
+    sigma = max(1.5, 4.5 - detail * 0.3)                            # detail zyada -> kam smoothing
+    arr = np.asarray(rgb.filter(ImageFilter.GaussianBlur(sigma)), dtype=np.float32)
+    mags, zcs = [], []
+    for c in range(3):                                              # har rang-channel alag dekho
+        ch = arr[:, :, c]
+        gy, gx = np.gradient(ch)
+        mags.append(np.hypot(gx, gy))
+        lap = (np.roll(ch, 1, 0) + np.roll(ch, -1, 0) + np.roll(ch, 1, 1) + np.roll(ch, -1, 1) - 4 * ch)
+        pos = lap > 0
+        zcs.append((pos != np.roll(pos, 1, 0)) | (pos != np.roll(pos, 1, 1)))
+    ref = max(float(np.percentile(np.max(mags, axis=0), 99)), 1e-3)
+    tau = (0.34 - 0.03 * level) * ref                               # level zyada -> halke edges bhi aayenge
+    edges = np.zeros(arr.shape[:2], bool)
+    for m, z in zip(mags, zcs):
+        edges |= z & (m > tau)
+    edges[:3, :] = edges[-3:, :] = False
+    edges[:, :3] = edges[:, -3:] = False
 
-    # akele chhote daag hatao: sirf wahi pixel rakho jinke aas-paas ki lines ghani hon
-    mask = Image.fromarray((edges * 255).astype(np.uint8))
-    dens = np.asarray(mask.filter(ImageFilter.BoxBlur(4)), dtype=np.float32)
-    edges &= dens > 255 * 0.09
-    lines = Image.fromarray(np.where(edges, 0, 255).astype(np.uint8))
-    lines = lines.filter(ImageFilter.MinFilter((3, 3, 5)[thick - 1]))   # lines moti
-    if thick == 3:
-        lines = lines.filter(ImageFilter.MinFilter(3))
-    lines = lines.filter(ImageFilter.GaussianBlur(0.8)).point(lambda v: 0 if v < 150 else 255)  # kinare chikne
+    # paas-paas ke tukde jodo, phir chhote tukde hata do
+    near = np.asarray(Image.fromarray(np.where(edges, 0, 255).astype(np.uint8)).filter(ImageFilter.MinFilter(5))) < 128
+    thin = edges & keep_big_parts(near, int(60 + (10 - detail) * 8))
+    lines = Image.fromarray(np.where(thin, 0, 255).astype(np.uint8))
+    size = (1, 3, 5)[thick - 1]
+    if size > 1:
+        lines = lines.filter(ImageFilter.MinFilter(size))           # lines moti
+    lines = lines.filter(ImageFilter.GaussianBlur(0.9)).point(lambda v: 0 if v < 150 else 255)  # kinare chikne
 
     page = Image.new("L", (W, H), 255)
     page.paste(lines, (x0 + (bw - lines.width) // 2, y0 + (bh - lines.height) // 2))
