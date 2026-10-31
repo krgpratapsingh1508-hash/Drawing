@@ -577,20 +577,230 @@ def animals(d, rng):
     sprinkle(d, rng, placed, 190, 1600, 8)
 
 
-VEHICLES_NAMED = [(car, 150, "Car", "कार"), (boat, 140, "Boat", "नाव"), (rocket, 110, "Rocket", "रॉकेट")]
+# ---- gaadiyan (Vehicles theme ke liye)
+def bus(d, x, y, r, rng):
+    rect(d, x - r, y - r * 0.5, x + r, y + r * 0.4)
+    for i in range(5):
+        wx = x - r * 0.92 + i * r * 0.33
+        rect(d, wx, y - r * 0.4, wx + r * 0.25, y - r * 0.1)
+    rect(d, x + r * 0.72, y - r * 0.4, x + r * 0.92, y + r * 0.4)
+    d.line([(x + r * 0.82, y - r * 0.4), (x + r * 0.82, y + r * 0.4)], fill=BLACK, width=LW - 3)
+    d.line([(x - r, y + r * 0.12), (x + r * 0.72, y + r * 0.12)], fill=BLACK, width=LW - 3)
+    for wx in (x - r * 0.6, x + r * 0.45):
+        circ(d, wx, y + r * 0.4, r * 0.22)
+        circ(d, wx, y + r * 0.4, r * 0.09)
+    circ(d, x - r * 0.9, y + r * 0.27, r * 0.05)
+
+
+def truck(d, x, y, r, rng):
+    rect(d, x - r, y - r * 0.6, x + r * 0.25, y + r * 0.35)
+    poly(d, [(x + r * 0.3, y - r * 0.3), (x + r * 0.65, y - r * 0.3), (x + r, y + r * 0.05),
+             (x + r, y + r * 0.35), (x + r * 0.3, y + r * 0.35)])
+    poly(d, [(x + r * 0.4, y - r * 0.22), (x + r * 0.62, y - r * 0.22), (x + r * 0.82, y + r * 0.02),
+             (x + r * 0.4, y + r * 0.02)])
+    d.line([(x - r * 0.9, y - r * 0.2), (x + r * 0.15, y - r * 0.2)], fill=BLACK, width=LW - 3)
+    for wx in (x - r * 0.7, x - r * 0.3, x + r * 0.62):
+        circ(d, wx, y + r * 0.38, r * 0.2)
+        circ(d, wx, y + r * 0.38, r * 0.08)
+    circ(d, x + r * 0.93, y + r * 0.15, r * 0.05)
+
+
+def firetruck(d, x, y, r, rng):
+    rect(d, x - r, y - r * 0.25, x + r * 0.3, y + r * 0.4)
+    poly(d, [(x + r * 0.35, y - r * 0.35), (x + r * 0.7, y - r * 0.35), (x + r, y), (x + r, y + r * 0.4),
+             (x + r * 0.35, y + r * 0.4)])
+    poly(d, [(x + r * 0.45, y - r * 0.27), (x + r * 0.66, y - r * 0.27), (x + r * 0.84, y - r * 0.03),
+             (x + r * 0.45, y - r * 0.03)])
+    rect(d, x - r * 0.9, y - r * 0.5, x + r * 0.2, y - r * 0.25)
+    for k in range(7):
+        lx = x - r * 0.82 + k * r * 0.15
+        d.line([(lx, y - r * 0.5), (lx, y - r * 0.25)], fill=BLACK, width=LW - 3)
+    circ(d, x + r * 0.5, y - r * 0.45, r * 0.09)
+    d.line([(x - r * 0.9, y + r * 0.08), (x + r * 0.2, y + r * 0.08)], fill=BLACK, width=LW - 3)
+    for wx in (x - r * 0.6, x - r * 0.15, x + r * 0.65):
+        circ(d, wx, y + r * 0.43, r * 0.2)
+        circ(d, wx, y + r * 0.43, r * 0.08)
+
+
+def ambulance(d, x, y, r, rng):
+    rect(d, x - r, y - r * 0.55, x + r * 0.45, y + r * 0.4)
+    poly(d, [(x + r * 0.5, y - r * 0.3), (x + r * 0.72, y - r * 0.3), (x + r, y + r * 0.05),
+             (x + r, y + r * 0.4), (x + r * 0.5, y + r * 0.4)])
+    poly(d, [(x + r * 0.58, y - r * 0.22), (x + r * 0.7, y - r * 0.22), (x + r * 0.85, y - r * 0.0),
+             (x + r * 0.58, y - r * 0.0)])
+    a, b = r * 0.3, r * 0.1
+    cx, cy = x - r * 0.3, y - r * 0.08
+    poly(d, [(cx - b, cy - a), (cx + b, cy - a), (cx + b, cy - b), (cx + a, cy - b), (cx + a, cy + b),
+             (cx + b, cy + b), (cx + b, cy + a), (cx - b, cy + a), (cx - b, cy + b), (cx - a, cy + b),
+             (cx - a, cy - b), (cx - b, cy - b)])
+    rect(d, x + r * 0.1, y - r * 0.7, x + r * 0.3, y - r * 0.55)
+    for wx in (x - r * 0.55, x + r * 0.65):
+        circ(d, wx, y + r * 0.4, r * 0.2)
+        circ(d, wx, y + r * 0.4, r * 0.08)
+
+
+def train(d, x, y, r, rng):
+    y += r * 0.3
+    rect(d, x - r, y - r * 0.75, x - r * 0.3, y + r * 0.35)
+    rect(d, x - r * 1.08, y - r * 0.85, x - r * 0.22, y - r * 0.75)
+    rect(d, x - r * 0.85, y - r * 0.6, x - r * 0.45, y - r * 0.2)
+    rect(d, x - r * 0.3, y - r * 0.35, x + r * 0.75, y + r * 0.35)
+    poly(d, [(x + r * 0.28, y - r * 0.35), (x + r * 0.2, y - r * 0.75), (x + r * 0.5, y - r * 0.75),
+             (x + r * 0.42, y - r * 0.35)])
+    poly(d, dome(x - r * 0.02, y - r * 0.35, r * 0.15, r * 0.2))
+    poly(d, [(x + r * 0.75, y - r * 0.1), (x + r, y + r * 0.35), (x + r * 0.75, y + r * 0.35)])
+    circ(d, x + r * 0.55, y - r * 0.1, r * 0.07)
+    circ(d, x - r * 0.65, y + r * 0.4, r * 0.3)
+    circ(d, x - r * 0.65, y + r * 0.4, r * 0.1)
+    for wx in (x + r * 0.0, x + r * 0.5):
+        circ(d, wx, y + r * 0.45, r * 0.22)
+        circ(d, wx, y + r * 0.45, r * 0.08)
+    d.line([(x - r * 0.65, y + r * 0.4), (x + r * 0.5, y + r * 0.45)], fill=BLACK, width=LW - 3)
+    circ(d, x + r * 0.35, y - r * 0.95, r * 0.1)
+    circ(d, x + r * 0.5, y - r * 1.22, r * 0.14)
+
+
+def airplane(d, x, y, r, rng):
+    poly(d, [(x - r * 0.8, y - r * 0.1), (x - r * 1.05, y - r * 0.65), (x - r * 0.75, y - r * 0.65),
+             (x - r * 0.4, y - r * 0.1)])
+    poly(d, [(x - r * 0.15, y + r * 0.1), (x - r * 0.55, y + r * 0.7), (x - r * 0.3, y + r * 0.7),
+             (x + r * 0.3, y + r * 0.1)])
+    ell(d, x - r, y - r * 0.22, x + r, y + r * 0.22)
+    for i in range(6):
+        circ(d, x - r * 0.45 + i * r * 0.17, y - r * 0.04, r * 0.045)
+    poly(d, [(x + r * 0.62, y - r * 0.17), (x + r * 0.85, y - r * 0.05), (x + r * 0.62, y - r * 0.05)])
+    ell(d, x - r * 0.2, y + r * 0.22, x + r * 0.15, y + r * 0.36)
+
+
+def helicopter(d, x, y, r, rng):
+    x += r * 0.15
+    poly(d, [(x - r * 0.5, y - r * 0.1), (x - r * 1.2, y - r * 0.2), (x - r * 1.2, y - r * 0.05),
+             (x - r * 0.5, y + r * 0.15)])
+    poly(d, [(x - r * 1.2, y - r * 0.2), (x - r * 1.3, y - r * 0.55), (x - r * 1.08, y - r * 0.2)])
+    ell(d, x - r * 1.33, y - r * 0.2, x - r * 1.17, y + r * 0.15)
+    ell(d, x - r * 0.65, y - r * 0.5, x + r * 0.7, y + r * 0.4)
+    poly(d, rot_ellipse(x + r * 0.35, y - r * 0.12, r * 0.28, r * 0.22, -0.2))
+    d.line([(x - r * 0.1, y - r * 0.45), (x - r * 0.1, y + r * 0.35)], fill=BLACK, width=LW - 3)
+    d.line([(x, y - r * 0.5), (x, y - r * 0.72)], fill=BLACK, width=LW)
+    ell(d, x - r * 0.95, y - r * 0.8, x + r * 0.95, y - r * 0.68)
+    for sx in (x - r * 0.3, x + r * 0.3):
+        d.line([(sx, y + r * 0.38), (sx, y + r * 0.65)], fill=BLACK, width=LW)
+    d.line([(x - r * 0.55, y + r * 0.65), (x + r * 0.65, y + r * 0.65)], fill=BLACK, width=LW + 2)
+
+
+def bicycle(d, x, y, r, rng):
+    wr = r * 0.42
+    rear, front = (x - r * 0.55, y + r * 0.3), (x + r * 0.55, y + r * 0.3)
+    for cx, cy in (rear, front):
+        circ(d, cx, cy, wr)
+        circ(d, cx, cy, wr * 0.18)
+        for k in range(8):
+            a = math.pi * k / 4
+            d.line([(cx, cy), (cx + math.cos(a) * wr, cy + math.sin(a) * wr)], fill=BLACK, width=2)
+    seat, ped, head = (x - r * 0.2, y - r * 0.2), (x, y + r * 0.3), (x + r * 0.4, y - r * 0.25)
+    for a, b in ((rear, seat), (seat, ped), (ped, rear), (seat, head), (ped, head), (head, front)):
+        d.line([a, b], fill=BLACK, width=LW)
+    d.line([(x + r * 0.4, y - r * 0.25), (x + r * 0.34, y - r * 0.5), (x + r * 0.55, y - r * 0.5)],
+           fill=BLACK, width=LW, joint="curve")
+    d.line([(x - r * 0.35, y - r * 0.24), (x - r * 0.05, y - r * 0.24)], fill=BLACK, width=LW + 4)
+    circ(d, x, y + r * 0.3, r * 0.08)
+
+
+def motorcycle(d, x, y, r, rng):
+    for cx in (x - r * 0.6, x + r * 0.6):
+        circ(d, cx, y + r * 0.3, r * 0.4)
+        circ(d, cx, y + r * 0.3, r * 0.15)
+    poly(d, [(x - r * 0.5, y + r * 0.2), (x - r * 0.4, y - r * 0.15), (x + r * 0.1, y - r * 0.2),
+             (x + r * 0.35, y), (x + r * 0.35, y + r * 0.3), (x - r * 0.2, y + r * 0.3)])
+    ell(d, x - r * 0.1, y - r * 0.45, x + r * 0.35, y - r * 0.15)
+    poly(d, [(x - r * 0.6, y - r * 0.2), (x - r * 0.1, y - r * 0.2), (x - r * 0.1, y - r * 0.08),
+             (x - r * 0.6, y - r * 0.08)])
+    d.line([(x + r * 0.45, y - r * 0.3), (x + r * 0.6, y + r * 0.3)], fill=BLACK, width=LW)
+    d.line([(x + r * 0.42, y - r * 0.3), (x + r * 0.3, y - r * 0.5), (x + r * 0.5, y - r * 0.5)],
+           fill=BLACK, width=LW, joint="curve")
+    circ(d, x + r * 0.55, y - r * 0.12, r * 0.08)
+    poly(d, [(x - r * 0.9, y + r * 0.15), (x - r * 0.35, y + r * 0.15), (x - r * 0.35, y + r * 0.27),
+             (x - r * 0.9, y + r * 0.27)])
+
+
+def tractor(d, x, y, r, rng):
+    rect(d, x - r * 0.8, y - r * 0.9, x + r * 0.05, y - r * 0.8)
+    rect(d, x - r * 0.7, y - r * 0.8, x - r * 0.05, y + r * 0.2)
+    rect(d, x - r * 0.58, y - r * 0.7, x - r * 0.17, y - r * 0.3)
+    rect(d, x + r * 0.05, y - r * 0.15, x + r * 0.9, y + r * 0.4)
+    rect(d, x + r * 0.6, y - r * 0.55, x + r * 0.68, y - r * 0.15)
+    for k in range(3):
+        d.line([(x + r * 0.2 + k * r * 0.22, y - r * 0.05), (x + r * 0.2 + k * r * 0.22, y + r * 0.25)],
+               fill=BLACK, width=LW - 3)
+    circ(d, x - r * 0.45, y + r * 0.25, r * 0.55)
+    circ(d, x - r * 0.45, y + r * 0.25, r * 0.25)
+    circ(d, x - r * 0.45, y + r * 0.25, r * 0.08)
+    circ(d, x + r * 0.65, y + r * 0.5, r * 0.3)
+    circ(d, x + r * 0.65, y + r * 0.5, r * 0.12)
+
+
+def rickshaw(d, x, y, r, rng):
+    rect(d, x - r * 0.95, y - r * 0.7, x + r * 0.3, y - r * 0.6)
+    rect(d, x - r * 0.85, y - r * 0.6, x + r * 0.2, y + r * 0.3)
+    rect(d, x - r * 0.7, y - r * 0.45, x - r * 0.1, y - r * 0.05)
+    poly(d, [(x + r * 0.2, y - r * 0.6), (x + r * 0.45, y - r * 0.1), (x + r * 0.2, y - r * 0.1)])
+    poly(d, [(x + r * 0.2, y - r * 0.1), (x + r * 0.5, y - r * 0.1), (x + r * 0.7, y + r * 0.3),
+             (x + r * 0.2, y + r * 0.3)])
+    circ(d, x + r * 0.6, y + r * 0.08, r * 0.06)
+    for wx, rr in ((x - r * 0.55, 0.24), (x + r * 0.5, 0.2)):
+        circ(d, wx, y + r * 0.35, r * rr)
+        circ(d, wx, y + r * 0.35, r * 0.08)
+
+
+def submarine(d, x, y, r, rng):
+    poly(d, [(x - r * 1.1, y - r * 0.2), (x - r * 0.95, y), (x - r * 1.1, y + r * 0.2)])
+    d.line([(x, y - r * 0.55), (x, y - r * 0.8), (x + r * 0.22, y - r * 0.8)], fill=BLACK, width=LW,
+           joint="curve")
+    rect(d, x - r * 0.25, y - r * 0.55, x + r * 0.25, y - r * 0.2)
+    ell(d, x - r, y - r * 0.32, x + r, y + r * 0.32)
+    for k in (-0.45, 0, 0.45):
+        circ(d, x + k * r, y, r * 0.1)
+    for bx, by, br in ((1.25, -0.3, 0.07), (1.4, -0.5, 0.05), (1.3, -0.75, 0.06)):
+        bubble(d, x + bx * r, y + by * r, br * r, rng)
+
+
+def hotballoon(d, x, y, r, rng):
+    ell(d, x - r * 0.7, y - r, x + r * 0.7, y + r * 0.3)
+    d.ellipse([(x - r * 0.35) * 1, y - r, (x + r * 0.35), y + r * 0.3], outline=BLACK, width=LW - 3)
+    for sx in (-1, 1):
+        d.line([(x + sx * r * 0.45, y + r * 0.2), (x + sx * r * 0.2, y + r * 0.55)], fill=BLACK, width=LW - 2)
+    rect(d, x - r * 0.25, y + r * 0.55, x + r * 0.25, y + r * 0.85)
+    d.line([(x - r * 0.25, y + r * 0.68), (x + r * 0.25, y + r * 0.68)], fill=BLACK, width=LW - 4)
+
+
+# (function, size, English, Hindi)
+VEHICLES_NAMED = [
+    (car, 150, "Car", "कार"), (bus, 190, "Bus", "बस"), (truck, 190, "Truck", "ट्रक"),
+    (train, 160, "Train", "रेलगाड़ी"), (airplane, 200, "Aeroplane", "हवाई जहाज़"),
+    (helicopter, 170, "Helicopter", "हेलीकॉप्टर"), (bicycle, 190, "Bicycle", "साइकिल"),
+    (motorcycle, 190, "Motorcycle", "मोटरसाइकिल"), (tractor, 160, "Tractor", "ट्रैक्टर"),
+    (rickshaw, 190, "Auto Rickshaw", "ऑटो रिक्शा"), (boat, 140, "Boat", "नाव"),
+    (submarine, 185, "Submarine", "पनडुब्बी"), (rocket, 110, "Rocket", "रॉकेट"),
+    (firetruck, 190, "Fire Truck", "दमकल"), (ambulance, 190, "Ambulance", "एम्बुलेंस"),
+    (hotballoon, 170, "Hot Air Balloon", "गर्म हवा का गुब्बारा"),
+]
 
 
 def vehicles(d, rng):
-    """Ek bada vehicle + uske niche naam (English aur Hindi)."""
-    func, sz, en, hi = rng.choice(VEHICLES_NAMED)
-    func(d, W // 2, 740, int(sz * 2.0), rng)
+    """Ek bada vehicle + uske niche naam (English aur Hindi).
+    Sheet number badhne par vehicle ek ke baad ek badalta hai, isliye pas-pas ki sheets kabhi same nahi."""
+    k = getattr(rng, "sheet_n", 0) // 10
+    func, sz, en, hi = VEHICLES_NAMED[k % len(VEHICLES_NAMED)]
+    func(d, W // 2, 740, int(sz * 2.0 * rng.uniform(0.94, 1.04)), rng)
     d.text((W // 2, 1160), en, BLACK, 104)
     if HAS_HINDI:
         d.text((W // 2, 1285), hi, BLACK, 112, font=get_hindi_font)
-    placed = [(W // 2, 740, 400)] + [(W // 2 + dx, yy, 125) for dx in (-230, 0, 230) for yy in (1160, 1285)]
-    items = [(cloud, 90, 120)] * 2 + [(sun, 80, 130)] + [(star, 42, 55)] * 3 + [(butterfly, 55, 75)]
+    placed = [(W // 2, 740, 420)] + [(W // 2 + dx, yy, 120) for dx in range(-480, 481, 120) for yy in (1160, 1285)]
+    items = [(cloud, rng.randint(80, 105), 125) for _ in range(2)] + [(sun, 80, 130)]
+    items += [(star, rng.randint(36, 52), 60) for _ in range(rng.randint(3, 5))]
+    items += [(rng.choice([butterfly, heart, balloon]), 60, 80) for _ in range(rng.randint(1, 3))]
     placed = scatter(d, rng, items, 190, 1600, placed)
-    sprinkle(d, rng, placed, 190, 1600, 8)
+    sprinkle(d, rng, placed, 190, 1600, rng.randint(6, 10))
 
 
 def treats(d, rng):
@@ -734,6 +944,7 @@ def make_page(n):
     """Sheet number n (1..TOTAL) ki sheet. Same n = hamesha same sheet."""
     theme = theme_of(n)
     rng = random.Random(n)
+    rng.sheet_n = n
     cv = Canvas()
     THEMES[theme](cv, rng)
     frame(cv, TITLES[theme], f"Sheet No. {n:,}")
