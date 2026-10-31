@@ -1197,6 +1197,67 @@ def cb_open(n):
 
 
 
+
+# ===== Bachon wala look ==========================================================
+KID_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap');
+html, body, .stApp, .stApp * {font-family: 'Baloo 2', 'Comic Sans MS', sans-serif;}
+.stApp {background: radial-gradient(circle at 10% 10%, #fff3c4 0, transparent 35%),
+        radial-gradient(circle at 90% 15%, #ffd6e8 0, transparent 35%),
+        radial-gradient(circle at 15% 90%, #cdeeff 0, transparent 35%),
+        radial-gradient(circle at 90% 85%, #d6ffe2 0, transparent 35%), #fffaf0;}
+[data-testid="stHeader"] {background: transparent;}
+h1 {font-weight: 800 !important; font-size: 3.2rem !important; text-align: center; padding-bottom: .2rem;
+    background: linear-gradient(90deg,#ff5e62,#ff9966,#f5b700,#2ec4a0,#3a86ff,#9b5de5);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;}
+[data-testid="stMarkdownContainer"] p {font-size: 1.15rem;}
+[data-testid="stMain"] [data-testid="stMarkdownContainer"] > p:first-child {text-align: center;}
+/* mode pills */
+div[role="radiogroup"] {gap: .7rem; flex-wrap: wrap; justify-content: center;}
+div[role="radiogroup"] > label {background: #fff; border: 4px solid #ffd166; border-radius: 999px;
+    padding: .35rem 1.3rem; box-shadow: 0 6px 0 #f0b429; cursor: pointer; transition: transform .1s;}
+div[role="radiogroup"] > label:hover {transform: translateY(-3px) rotate(-1deg);}
+div[role="radiogroup"] > label > div:first-child {display: none;}
+div[role="radiogroup"] > label p {font-size: 1.35rem !important; font-weight: 800; margin: 0;}
+div[role="radiogroup"] > label:has(input:checked) {background: linear-gradient(135deg,#ff9966,#ff5e62);
+    border-color: #fff; box-shadow: 0 6px 0 #c0392b;}
+div[role="radiogroup"] > label:has(input:checked) p {color: #fff;}
+/* buttons */
+div.stButton > button, div.stDownloadButton > button {border-radius: 999px; border: 4px solid #fff;
+    font-weight: 800; font-size: 1.2rem; padding: .55rem 1.5rem; color: #fff;
+    background: linear-gradient(135deg,#7b5cff,#4fa3ff); box-shadow: 0 6px 0 rgba(60,40,140,.35);
+    transition: transform .08s, box-shadow .08s;}
+div.stButton > button:hover, div.stDownloadButton > button:hover {transform: translateY(-3px); color: #fff;
+    border-color: #fff; box-shadow: 0 9px 0 rgba(60,40,140,.35);}
+div.stButton > button:active, div.stDownloadButton > button:active {transform: translateY(4px);
+    box-shadow: 0 2px 0 rgba(60,40,140,.35);}
+div.stButton > button p, div.stDownloadButton > button p {font-size: 1.2rem; font-weight: 800;}
+div.stButton > button[kind="primary"] {background: linear-gradient(135deg,#ff9966,#ff5e62);
+    box-shadow: 0 6px 0 rgba(160,50,30,.4);}
+div.stDownloadButton > button {background: linear-gradient(135deg,#2ec4a0,#3a86ff);
+    box-shadow: 0 6px 0 rgba(20,100,100,.35);}
+/* sheet picture */
+[data-testid="stImage"] img {border-radius: 26px; border: 8px solid #fff;
+    box-shadow: 0 14px 34px rgba(80,60,120,.25); background: #fff;}
+[data-testid="stImageCaption"], [data-testid="stCaptionContainer"] {text-align: center; font-weight: 700;}
+/* inputs, expander, sidebar, progress */
+[data-baseweb="input"], [data-baseweb="select"] > div {border-radius: 18px !important; border: 3px solid #cdb4ff !important;
+    background: #fff !important;}
+[data-testid="stExpander"] {background: rgba(255,255,255,.85); border: 4px dashed #ffb703; border-radius: 22px;}
+[data-testid="stExpander"] summary p {font-size: 1.25rem; font-weight: 800;}
+[data-testid="stSidebar"] {background: linear-gradient(180deg,#e9f2ff,#f4e9ff);
+    border-right: 4px dotted #b79cff;}
+[data-testid="stProgress"] div[role="progressbar"] > div {background: linear-gradient(90deg,#ff5e62,#f5b700,#2ec4a0,#3a86ff);}
+[data-testid="stAlert"] {border-radius: 20px;}
+</style>
+"""
+
+
+def inject_css():
+    st.markdown(KID_CSS, unsafe_allow_html=True)
+
+
 # ===== Seekho UI (Ginti / Varnamala) ==========================================
 MODE_DRAW, MODE_NUM, MODE_ABC, MODE_HINDI = ("🎨 Drawing sheets", "🔢 Ginti (1 se 100)",
                                               "🔠 A to Z", "🔤 Hindi Varnamala")
@@ -1239,9 +1300,13 @@ def learn_ui(mode):
         st.info("Hindi font nahi mila, isliye sirf English naam dikh rahe hain. "
                 "`fonts/` folder me Devanagari font rakho to Hindi naam bhi aayenge.")
 
-    c1, c2, c3 = st.columns([1, 1, 2])
+    def pick_random():
+        st.session_state[key] = random.SystemRandom().randint(1, total)
+
+    c1, c2, c4, c3 = st.columns([1, 1, 1.2, 1.6])
     c1.button("⬅️ Pichli", on_click=step, args=(-1,), key=f"prev_{key}")
-    c2.button("Agli ➡️", on_click=step, args=(1,), key=f"next_{key}")
+    c2.button("Agli ➡️", on_click=step, args=(1,), key=f"next_{key}", type="primary")
+    c4.button("🎲 Koi bhi!", on_click=pick_random, key=f"rnd_{key}")
     if is_num:
         c3.number_input("Number", min_value=1, max_value=total, step=1, key=key)
     elif is_abc:
@@ -1252,6 +1317,7 @@ def learn_ui(mode):
                      format_func=lambda i: f"{LETTERS[i - 1][0]}  ({LETTERS[i - 1][1]})")
 
     i = int(st.session_state[key])
+    st.progress(i / total, text=f"⭐ {i} / {total} — shabaash! Aise hi aage badho!")
     png = learn_png(kind, i)
     _, mid, _ = st.columns([1, 2, 1])
     with mid:
@@ -1270,6 +1336,7 @@ def learn_ui(mode):
         if st.button("📦 Pack banao", key=f"mk_{key}"):
             with st.spinner("Pack ban raha hai..."):
                 st.session_state[f"pack_{key}"] = (a, b, make_pdf([learn_png(kind, m) for m in range(a, b + 1)]))
+            st.balloons()
         if f"pack_{key}" in st.session_state:
             pa, pb, pdf = st.session_state[f"pack_{key}"]
             st.download_button(f"📄 Sheets {pa}–{pb} ka PDF download karo", pdf,
@@ -1284,12 +1351,14 @@ if "view" not in st.session_state:
 if "sheet_no" not in st.session_state:
     cb_random()
 
-st.sidebar.radio("Kya chahiye?", [MODE_DRAW, MODE_NUM, MODE_ABC, MODE_HINDI], key="mode")
+inject_css()
+st.radio("Kya karna hai?", [MODE_DRAW, MODE_NUM, MODE_ABC, MODE_HINDI], key="mode",
+         horizontal=True, label_visibility="collapsed")
 if st.session_state.mode != MODE_DRAW:
     learn_ui(st.session_state.mode)
     st.stop()
 
-st.title("🎨 Bacho ki Drawing Book")
+st.title("🎨 Bacho ki Drawing Book 🌈")
 st.write(f"**{TOTAL:,} alag-alag drawing sheets!** Random dabao ya number likho — "
          "download karo, print karo aur rang bharo. 🖍️")
 
