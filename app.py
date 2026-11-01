@@ -11,6 +11,7 @@ import os
 import random
 from functools import lru_cache
 
+import cv2
 import numpy as np
 import streamlit as st
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps, features
@@ -1619,42 +1620,29 @@ def make_abc_page(i):
 PHOTO_BOX = (70, 200, W - 70, H - 160)   # frame ke andar photo ki jagah
 
 
-def keep_big_parts(mask, min_size):
-    """mask (bool) me se sirf wahi jude hue tukde rakho jinme kam se kam min_size pixel hon.
-    Isse chhote daag/khurdure hat jate hain aur lambi, saaf lines bachti hain."""
-    h, w = mask.shape
-    pad = np.zeros((h + 2, w + 2), np.uint8)
-    pad[1:-1, 1:-1] = mask
-    w2 = w + 2
-    flat = pad.ravel()
-    seen = bytearray(flat.size)
-    keep = bytearray(flat.size)
-    offs = (-w2 - 1, -w2, -w2 + 1, -1, 1, w2 - 1, w2, w2 + 1)
-    for start in np.flatnonzero(flat).tolist():
-        if seen[start]:
-            continue
-        seen[start] = 1
-        comp = [start]
-        stack = [start]
-        while stack:
-            p = stack.pop()
-            for o in offs:
-                q = p + o
-                if flat[q] and not seen[q]:
-                    seen[q] = 1
-                    comp.append(q)
-                    stack.append(q)
-        if len(comp) >= min_size:
-            for p in comp:
-                keep[p] = 1
-    return np.frombuffer(bytes(keep), np.uint8).reshape(h + 2, w2)[1:-1, 1:-1].astype(bool)
+def soft_outline(rgb, detail, level):
+    """Halki, patli pencil-jaisi outline (drawing book / reference sheet jaisi). Andar khali, rang bharne layak."""
+    a = np.asarray(rgb)
+    for _ in range(2):
+        a = cv2.bilateralFilter(a, 9, 40, 9)
+    g = cv2.cvtColor(a, cv2.COLOR_RGB2GRAY)
+    g = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(g)
+    r = max(5, int(25 - detail * 2)) | 1                         # detail zyada -> chhoti cheezein bhi
+    bl = cv2.GaussianBlur(255 - g, (0, 0), r / 3)
+    sk = cv2.divide(g, 255 - bl, scale=256).astype(np.float32)   # color-dodge: sirf kinare bachte hain
+    gam = (1.0 + (10 - level) * 0.12) * 2.4                      # level zyada -> lines gehri
+    sk = 255 * np.power(np.clip(sk, 0, 255) / 255.0, gam)
+    dark = cv2.GaussianBlur((g < 60).astype(np.float32), (0, 0), 3)
+    sk = np.maximum(sk, 255 * 0.55 * dark)                       # kaale dhabbe halke kar do
+    sk = cv2.fastNlMeansDenoising(np.clip(sk, 0, 255).astype(np.uint8), None, 10, 7, 21)
+    sk = np.clip((sk.astype(np.float32) - 40) * 1.18, 0, 255)     # lines thodi gehri, safedi saaf
+    return Image.fromarray(sk.astype(np.uint8))
 
 
-def photo_sheet(raw, detail=5, thick=2, level=5, title="Meri Drawing"):
-    """Photo (bytes) ki sirf saaf outline banata hai - andar khali, taaki bachche rang bhar sakein.
-    Tarika: photo ko halka smooth karo, jahan rang/roshni tezi se badle wahan patli line kheencho,
-    phir chhote daag aur tooti-phooti lakeerein hata do, sirf lambi saaf lines rakho.
-    detail: kam = simple/badi lines, zyada = chhoti cheezein bhi. level: kitni lines (zyada = halki lines bhi)."""
+def photo_sheet(raw, detail=5, thick=2, level=5, title="Meri Drawing", style=0):
+    """Photo (bytes) ko drawing-book jaisi patli, saaf outline me badalta hai - andar khali, rang bharne ke liye.
+    detail: kam = sirf badi lines, zyada = chhoti cheezein bhi. level: kitni lines (zyada = halki lines bhi).
+    thick: 1 = bahut patli, 2 = patli, 3 = thodi moti."""
     im = Image.open(io.BytesIO(raw))
     im = ImageOps.exif_transpose(im)
     im.thumbnail((2400, 2400))
@@ -1665,42 +1653,45 @@ def photo_sheet(raw, detail=5, thick=2, level=5, title="Meri Drawing"):
     x0, y0, x1, y1 = PHOTO_BOX
     bw, bh = x1 - x0, y1 - y0
     rgb = ImageOps.contain(rgb, (bw, bh), Image.LANCZOS)
-    rgb = ImageOps.autocontrast(rgb, cutoff=1)
-    rgb = rgb.filter(ImageFilter.MedianFilter(5))                  # daane / noise saaf
 
-    sigma = max(1.5, 4.5 - detail * 0.3)                            # detail zyada -> kam smoothing
-    arr = np.asarray(rgb.filter(ImageFilter.GaussianBlur(sigma)), dtype=np.float32)
-    mags, zcs = [], []
-    for c in range(3):                                              # har rang-channel alag dekho
-        ch = arr[:, :, c]
-        gy, gx = np.gradient(ch)
-        mags.append(np.hypot(gx, gy))
-        lap = (np.roll(ch, 1, 0) + np.roll(ch, -1, 0) + np.roll(ch, 1, 1) + np.roll(ch, -1, 1) - 4 * ch)
-        pos = lap > 0
-        zcs.append((pos != np.roll(pos, 1, 0)) | (pos != np.roll(pos, 1, 1)))
-    ref = max(float(np.percentile(np.max(mags, axis=0), 99)), 1e-3)
-    tau = (0.34 - 0.03 * level) * ref                               # level zyada -> halke edges bhi aayenge
-    edges = np.zeros(arr.shape[:2], bool)
-    for m, z in zip(mags, zcs):
-        edges |= z & (m > tau)
-    edges[:3, :] = edges[-3:, :] = False
-    edges[:, :3] = edges[:, -3:] = False
+    if style == 0:                                              # halki pencil-jaisi outline
+        lines = soft_outline(rgb, detail, level)
+        page = Image.new("L", (W, H), 255)
+        page.paste(lines, (x0 + (bw - lines.width) // 2, y0 + (bh - lines.height) // 2))
+        cv_ = Canvas()
+        frame(cv_, (title or "Meri Drawing")[:24], "Photo Drawing")
+        fr = cv_.img.resize((W, H), Image.LANCZOS).convert("L")
+        return ImageChops.darker(fr, page)
 
-    # paas-paas ke tukde jodo, phir chhote tukde hata do
-    near = np.asarray(Image.fromarray(np.where(edges, 0, 255).astype(np.uint8)).filter(ImageFilter.MinFilter(5))) < 128
-    thin = edges & keep_big_parts(near, int(60 + (10 - detail) * 8))
-    lines = Image.fromarray(np.where(thin, 0, 255).astype(np.uint8))
-    size = (1, 3, 5)[thick - 1]
-    if size > 1:
-        lines = lines.filter(ImageFilter.MinFilter(size))           # lines moti
-    lines = lines.filter(ImageFilter.GaussianBlur(0.9)).point(lambda v: 0 if v < 150 else 255)  # kinare chikne
+    a = np.asarray(rgb)
+    for _ in range(3):
+        a = cv2.bilateralFilter(a, 9, 45, 9)            # texture mitao, kinare bachao
+    g = cv2.cvtColor(a, cv2.COLOR_RGB2GRAY)
+    g = cv2.GaussianBlur(g, (0, 0), 2.0)
+    hi = max(8.0, 38 - level * 2.8)                      # level zyada -> halke kinare bhi aayenge
+    e = cv2.Canny(g, hi * 0.45, hi)                      # ek-pixel patli line
+    e = cv2.dilate(e, np.ones((3, 3), np.uint8))         # tooti lines jodo
+
+    # chhote tukde / daag hatao, sirf lambi lines rakho
+    n, lab, stats, _ = cv2.connectedComponentsWithStats((e > 0).astype(np.uint8), connectivity=8)
+    min_area = int((40 + (10 - detail) * 5) * 3)
+    ok = stats[:, cv2.CC_STAT_AREA] >= min_area
+    ok[0] = False
+    e = ok[lab]
+
+    out = np.where(e, 0, 255).astype(np.uint8)
+    k = (1, 3, 5)[thick - 1]
+    if k > 1:
+        out = cv2.erode(out, np.ones((k, k), np.uint8))
+    out = cv2.GaussianBlur(out, (0, 0), 0.8)
+    lines = Image.fromarray(np.where(out < 170, 0, 255).astype(np.uint8))
 
     page = Image.new("L", (W, H), 255)
     page.paste(lines, (x0 + (bw - lines.width) // 2, y0 + (bh - lines.height) // 2))
 
-    cv = Canvas()
-    frame(cv, (title or "Meri Drawing")[:24], "Photo Drawing")
-    fr = cv.img.resize((W, H), Image.LANCZOS).convert("L")
+    cv_ = Canvas()
+    frame(cv_, (title or "Meri Drawing")[:24], "Photo Drawing")
+    fr = cv_.img.resize((W, H), Image.LANCZOS).convert("L")
     return ImageChops.darker(fr, page)
 
 
@@ -1903,8 +1894,8 @@ def learn_ui(mode):
 
 
 @st.cache_data(show_spinner="Outline ban rahi hai... ✏️", max_entries=40)
-def photo_png(raw, detail, thick, level, title):
-    return to_png(photo_sheet(raw, detail, thick, level, title))
+def photo_png(raw, detail, thick, level, title, style):
+    return to_png(photo_sheet(raw, detail, thick, level, title, style))
 
 
 def photo_ui():
@@ -1913,11 +1904,14 @@ def photo_ui():
              "taaki aap rang bhar sako. 🖍️")
     files = st.file_uploader("Photo chuno (ek ya kai)", type=["png", "jpg", "jpeg", "webp", "bmp"],
                              accept_multiple_files=True, key="photo_files")
+    style_name = st.radio("Outline ka style", ["✏️ Halki pencil outline (drawing book jaisi)", "🖊️ Patli pen outline (saaf lines)"],
+                          key="photo_style", horizontal=True)
+    style = 0 if style_name.startswith("✏️") else 1
     title = st.text_input("Sheet ka title", "Meri Drawing", max_chars=24, key="photo_title")
     s1, s2, s3 = st.columns(3)
     detail = s1.slider("Detail (kam = simple, zyada = bahut chhoti cheezein)", 1, 10, 5, key="photo_detail")
     level = s2.slider("Kitni lines (kam = sirf mukhya, zyada = sab)", 1, 10, 5, key="photo_level")
-    thick = s3.slider("Line ki motai", 1, 3, 2, key="photo_thick")
+    thick = s3.slider("Line ki motai (sirf pen style me)", 1, 3, 2, key="photo_thick")
     st.caption("Tip: saaf, roshan photo jisme ek hi cheez/chehra ho, sabse achhi outline banati hai. "
                "Lines uljhi hon to Detail ya 'Kitni lines' kam karo; lines kam hon to badhao.")
     if not files:
@@ -1928,7 +1922,7 @@ def photo_ui():
     for k, f in enumerate(files):
         raw = f.getvalue()
         try:
-            png = photo_png(raw, detail, thick, level, title)
+            png = photo_png(raw, detail, thick, level, title, style)
         except Exception:
             st.error(f"'{f.name}' photo nahi khul payi. Dusri photo (JPG/PNG) try karo.")
             continue
