@@ -11,8 +11,13 @@ import os
 import random
 from functools import lru_cache
 
-import cv2
 import numpy as np
+try:
+    import cv2
+    HAS_CV2 = True
+except Exception:      # server par OpenCV na ho to bhi app chalega
+    cv2 = None
+    HAS_CV2 = False
 import streamlit as st
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps, features
 
@@ -1621,20 +1626,33 @@ PHOTO_BOX = (70, 200, W - 70, H - 160)   # frame ke andar photo ki jagah
 
 
 def soft_outline(rgb, detail, level):
-    """Halki, patli pencil-jaisi outline (drawing book / reference sheet jaisi). Andar khali, rang bharne layak."""
-    a = np.asarray(rgb)
-    for _ in range(2):
-        a = cv2.bilateralFilter(a, 9, 40, 9)
-    g = cv2.cvtColor(a, cv2.COLOR_RGB2GRAY)
-    g = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(g)
+    """Halki, patli pencil-jaisi outline (drawing book jaisi). Andar khali, rang bharne layak."""
     r = max(5, int(25 - detail * 2)) | 1                         # detail zyada -> chhoti cheezein bhi
-    bl = cv2.GaussianBlur(255 - g, (0, 0), r / 3)
-    sk = cv2.divide(g, 255 - bl, scale=256).astype(np.float32)   # color-dodge: sirf kinare bachte hain
     gam = (1.0 + (10 - level) * 0.12) * 2.4                      # level zyada -> lines gehri
+    if HAS_CV2:
+        a = np.asarray(rgb)
+        for _ in range(2):
+            a = cv2.bilateralFilter(a, 9, 40, 9)
+        g = cv2.cvtColor(a, cv2.COLOR_RGB2GRAY)
+        g = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(g)
+        bl = cv2.GaussianBlur(255 - g, (0, 0), r / 3)
+        sk = cv2.divide(g, 255 - bl, scale=256).astype(np.float32)
+        dark = cv2.GaussianBlur((g < 60).astype(np.float32), (0, 0), 3)
+    else:                                                        # sirf PIL + numpy
+        pil = rgb.filter(ImageFilter.MedianFilter(5)).filter(ImageFilter.MedianFilter(5))
+        gi = ImageOps.autocontrast(ImageOps.equalize(pil.convert("L")), cutoff=1)
+        g = np.asarray(gi, dtype=np.float32)
+        bl = np.asarray(ImageOps.invert(gi).filter(ImageFilter.GaussianBlur(r / 3)), dtype=np.float32)
+        sk = np.clip(g * 256.0 / (256.0 - bl), 0, 255)
+        dk = Image.fromarray(((g < 60) * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(3))
+        dark = np.asarray(dk, dtype=np.float32) / 255.0
     sk = 255 * np.power(np.clip(sk, 0, 255) / 255.0, gam)
-    dark = cv2.GaussianBlur((g < 60).astype(np.float32), (0, 0), 3)
     sk = np.maximum(sk, 255 * 0.55 * dark)                       # kaale dhabbe halke kar do
-    sk = cv2.fastNlMeansDenoising(np.clip(sk, 0, 255).astype(np.uint8), None, 10, 7, 21)
+    sk = np.clip(sk, 0, 255).astype(np.uint8)
+    if HAS_CV2:
+        sk = cv2.fastNlMeansDenoising(sk, None, 10, 7, 21)
+    else:
+        sk = np.asarray(Image.fromarray(sk).filter(ImageFilter.MedianFilter(3)))
     sk = np.clip((sk.astype(np.float32) - 40) * 1.18, 0, 255)     # lines thodi gehri, safedi saaf
     return Image.fromarray(sk.astype(np.uint8))
 
@@ -1654,8 +1672,10 @@ def photo_sheet(raw, detail=5, thick=2, level=5, title="Meri Drawing", style=0):
     bw, bh = x1 - x0, y1 - y0
     rgb = ImageOps.contain(rgb, (bw, bh), Image.LANCZOS)
 
-    if style == 0:                                              # halki pencil-jaisi outline
+    if style == 0 or not HAS_CV2:                               # halki pencil-jaisi outline (cv2 na ho to pen style ke liye bhi yahi)
         lines = soft_outline(rgb, detail, level)
+        if style != 0:                                          # pen style (cv2 ke bina): sirf patli kaali lines
+            lines = lines.point(lambda v: 0 if v < 150 else 255).filter(ImageFilter.MedianFilter(3))
         page = Image.new("L", (W, H), 255)
         page.paste(lines, (x0 + (bw - lines.width) // 2, y0 + (bh - lines.height) // 2))
         cv_ = Canvas()
